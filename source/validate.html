@@ -83,6 +83,7 @@
 <p class="caption" role="heading"><span class="caption-text">Inference on Cloud AI 100</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="quick_start.html">Quick Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="autoclass.html">Auto Class</a></li>
 <li class="toctree-l1"><a class="reference internal" href="cli_api.html">Command Line Interface Use (CLI)</a></li>
 <li class="toctree-l1"><a class="reference internal" href="python_api.html">Python API</a></li>
 </ul>
@@ -149,7 +150,7 @@
 <tbody>
 <tr class="row-even"><td><p><strong>FalconForCausalLM</strong></p></td>
 <td><p>Falcon</p></td>
-<td><p><a class="reference internal" href="#(https://huggingface.co/tiiuae/falcon-40b)"><span class="xref myst">tiiuae/falcon-40b</span></a></p></td>
+<td><p><a class="reference external" href="https://huggingface.co/tiiuae/falcon-40b">tiiuae/falcon-40b</a></p></td>
 <td><p>✔️</p></td>
 </tr>
 <tr class="row-odd"><td><p><strong>GemmaForCausalLM</strong></p></td>
@@ -392,7 +393,21 @@
 </tr>
 </tbody>
 </table>
+<p><strong>Dual QPC:</strong>
+In the Dual QPC(Qualcomm Program Container) setup, the model is split across two  configurations:</p>
+<ul class="simple">
+<li><p>The <strong>Vision Encoder</strong> runs in one QPC.</p></li>
+<li><p>The <strong>Language Model</strong> (responsible for output generation) runs in a separate QPC.</p></li>
+<li><p>The outputs from the Vision Encoder are transferred to the Language Model.</p></li>
+<li><p>The dual QPC approach introduces the flexibility to run the vision and language components independently.</p></li>
+</ul>
+<p><strong>Single QPC:</strong>
+In the single QPC(Qualcomm Program Container) setup, the entire model—including both image encoding and text generation—runs within a single QPC. There is no model splitting, and all components operate within the same execution environment.</p>
+<p><strong>Note:</strong>
+The choice between Single and Dual QPC is determined during model instantiation using the <code class="docutils literal notranslate"><span class="pre">kv_offload</span></code> setting.
+If the <code class="docutils literal notranslate"><span class="pre">kv_offload</span></code> is set to <code class="docutils literal notranslate"><span class="pre">True</span></code> it runs in dual QPC and if its set to <code class="docutils literal notranslate"><span class="pre">False</span></code> model runs in single QPC mode.</p>
 </section>
+<hr class="docutils" />
 <section id="audio-models">
 <h3>Audio Models<a class="headerlink" href="#audio-models" title="Permalink to this heading"></a></h3>
 <p>(Automatic Speech Recognition) - Transcription Task
@@ -459,7 +474,7 @@
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright 2024, Qualcomm.</p>
+    <p>&#169; Copyright 2025, Qualcomm.</p>
   </div>
 
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
@@ -482,8 +497,6 @@
       <dl>
         <dd><a href="../index.html">main</a></dd>
         <dd><a href="release/v1.18/index.html">release/v1.18</a></dd>
-        <dd><a href="release/v1.19/index.html">release/v1.19</a></dd>
-        <dd><a href="release/v1.20/index.html">release/v1.20(beta)</a></dd>
       </dl>
     </div>
 </div><script>

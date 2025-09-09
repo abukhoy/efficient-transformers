@@ -67,8 +67,9 @@
 <p class="caption" role="heading"><span class="caption-text">Inference on Cloud AI 100</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="source/quick_start.html">Quick Start</a></li>
-<li class="toctree-l1"><a class="reference internal" href="source/cli_api.html">Command Line Interface Use (CLI)</a></li>
-<li class="toctree-l1"><a class="reference internal" href="source/python_api.html">Python API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="source/autoclass.html">Auto Classes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="source/cli_api.html">CLI API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="source/python_api.html">Python API Refernce</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">QAIC Finetune</span></p>
 <ul>
@@ -179,25 +180,86 @@
 <li class="toctree-l1"><a class="reference internal" href="source/quick_start.html">Quick Start</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="source/quick_start.html#supported-features">Supported Features</a></li>
 <li class="toctree-l2"><a class="reference internal" href="source/quick_start.html#transformed-models-and-qpc-storage">Transformed models and QPC storage</a></li>
-<li class="toctree-l2"><a class="reference internal" href="source/quick_start.html#command-line-interface">Command Line Interface</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="source/quick_start.html#qefficient-cloud-infer">QEfficient.cloud.infer</a></li>
-<li class="toctree-l3"><a class="reference internal" href="source/quick_start.html#qefficient-cloud-execute">QEfficient.cloud.execute</a></li>
-<li class="toctree-l3"><a class="reference internal" href="source/quick_start.html#qefficient-cloud-finetune">QEfficient.cloud.finetune</a></li>
-<li class="toctree-l3"><a class="reference internal" href="source/quick_start.html#multi-qranium-inference">Multi-Qranium Inference</a></li>
-<li class="toctree-l3"><a class="reference internal" href="source/quick_start.html#continuous-batching">Continuous Batching</a></li>
-<li class="toctree-l3"><a class="reference internal" href="source/quick_start.html#qnn-compilation">QNN Compilation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="source/quick_start.html#execution">Execution</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="source/quick_start.html#command-line-interface">Command Line Interface</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="source/quick_start.html#inference">Inference</a></li>
+<li class="toctree-l4"><a class="reference internal" href="source/quick_start.html#finetune">Finetune</a></li>
+<li class="toctree-l4"><a class="reference internal" href="source/quick_start.html#continuous-batching">Continuous Batching</a></li>
+<li class="toctree-l4"><a class="reference internal" href="source/quick_start.html#multi-qranium-inference">Multi-Qranium Inference</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="source/quick_start.html#python-api">Python API</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="source/quick_start.html#model-download-and-optimize-for-cloud-ai-100">1.  Model download and Optimize for Cloud AI 100</a></li>
-<li class="toctree-l3"><a class="reference internal" href="source/quick_start.html#export-and-compile-with-one-api">2. Export and Compile with one API</a></li>
-<li class="toctree-l3"><a class="reference internal" href="source/quick_start.html#execute">3. Execute</a></li>
-<li class="toctree-l3"><a class="reference internal" href="source/quick_start.html#draft-based-speculative-decoding">Draft-Based Speculative Decoding</a></li>
+<li class="toctree-l3"><a class="reference internal" href="source/quick_start.html#hl-api">HL API</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="source/quick_start.html#id1">Inference</a></li>
+<li class="toctree-l4"><a class="reference internal" href="source/quick_start.html#qnn-compilation-via-python-api">QNN Compilation via Python API</a></li>
+<li class="toctree-l4"><a class="reference internal" href="source/quick_start.html#draft-based-speculative-decoding">Draft-Based Speculative Decoding</a></li>
 </ul>
 </li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="source/cli_api.html">Command Line Interface Use (CLI)</a><ul>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="source/autoclass.html">Auto Classes</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="source/autoclass.html#qeffautomodelforcausallm"><code class="docutils literal notranslate"><span class="pre">QEFFAutoModelForCausalLM</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="source/autoclass.html#QEfficient.transformers.models.modeling_auto.QEFFAutoModelForCausalLM"><code class="docutils literal notranslate"><span class="pre">QEFFAutoModelForCausalLM</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="source/autoclass.html#QEfficient.transformers.models.modeling_auto.QEFFAutoModelForCausalLM.export"><code class="docutils literal notranslate"><span class="pre">QEFFAutoModelForCausalLM.export()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="source/autoclass.html#QEfficient.transformers.models.modeling_auto.QEFFAutoModelForCausalLM.get_sampling_inputs_and_outputs"><code class="docutils literal notranslate"><span class="pre">QEFFAutoModelForCausalLM.get_sampling_inputs_and_outputs()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="source/autoclass.html#QEfficient.transformers.models.modeling_auto.QEFFAutoModelForCausalLM.compile"><code class="docutils literal notranslate"><span class="pre">QEFFAutoModelForCausalLM.compile()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="source/autoclass.html#QEfficient.transformers.models.modeling_auto.QEFFAutoModelForCausalLM.generate"><code class="docutils literal notranslate"><span class="pre">QEFFAutoModelForCausalLM.generate()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="source/autoclass.html#qeffautomodel"><code class="docutils literal notranslate"><span class="pre">QEFFAutoModel</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="source/autoclass.html#QEfficient.transformers.models.modeling_auto.QEFFAutoModel"><code class="docutils literal notranslate"><span class="pre">QEFFAutoModel</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="source/autoclass.html#QEfficient.transformers.models.modeling_auto.QEFFAutoModel.export"><code class="docutils literal notranslate"><span class="pre">QEFFAutoModel.export()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="source/autoclass.html#QEfficient.transformers.models.modeling_auto.QEFFAutoModel.compile"><code class="docutils literal notranslate"><span class="pre">QEFFAutoModel.compile()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="source/autoclass.html#QEfficient.transformers.models.modeling_auto.QEFFAutoModel.generate"><code class="docutils literal notranslate"><span class="pre">QEFFAutoModel.generate()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="source/autoclass.html#QEfficient.transformers.models.modeling_auto.QEFFAutoModel.cloud_ai_100_feature_generate"><code class="docutils literal notranslate"><span class="pre">QEFFAutoModel.cloud_ai_100_feature_generate()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="source/autoclass.html#QEfficient.transformers.models.modeling_auto.QEFFAutoModel.pytorch_feature_generate"><code class="docutils literal notranslate"><span class="pre">QEFFAutoModel.pytorch_feature_generate()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="source/autoclass.html#qeffautopeftmodelforcausallm"><code class="docutils literal notranslate"><span class="pre">QEffAutoPeftModelForCausalLM</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="source/autoclass.html#QEfficient.peft.auto.QEffAutoPeftModelForCausalLM"><code class="docutils literal notranslate"><span class="pre">QEffAutoPeftModelForCausalLM</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="source/autoclass.html#QEfficient.peft.auto.QEffAutoPeftModelForCausalLM.load_adapter"><code class="docutils literal notranslate"><span class="pre">QEffAutoPeftModelForCausalLM.load_adapter()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="source/autoclass.html#QEfficient.peft.auto.QEffAutoPeftModelForCausalLM.active_adapter"><code class="docutils literal notranslate"><span class="pre">QEffAutoPeftModelForCausalLM.active_adapter</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="source/autoclass.html#QEfficient.peft.auto.QEffAutoPeftModelForCausalLM.set_adapter"><code class="docutils literal notranslate"><span class="pre">QEffAutoPeftModelForCausalLM.set_adapter()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="source/autoclass.html#QEfficient.peft.auto.QEffAutoPeftModelForCausalLM.from_pretrained"><code class="docutils literal notranslate"><span class="pre">QEffAutoPeftModelForCausalLM.from_pretrained()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="source/autoclass.html#QEfficient.peft.auto.QEffAutoPeftModelForCausalLM.export"><code class="docutils literal notranslate"><span class="pre">QEffAutoPeftModelForCausalLM.export()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="source/autoclass.html#QEfficient.peft.auto.QEffAutoPeftModelForCausalLM.compile"><code class="docutils literal notranslate"><span class="pre">QEffAutoPeftModelForCausalLM.compile()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="source/autoclass.html#QEfficient.peft.auto.QEffAutoPeftModelForCausalLM.generate"><code class="docutils literal notranslate"><span class="pre">QEffAutoPeftModelForCausalLM.generate()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="source/autoclass.html#qeffautoloramodelforcausallm"><code class="docutils literal notranslate"><span class="pre">QEffAutoLoraModelForCausalLM</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="source/autoclass.html#QEfficient.peft.lora.auto.QEffAutoLoraModelForCausalLM"><code class="docutils literal notranslate"><span class="pre">QEffAutoLoraModelForCausalLM</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="source/autoclass.html#QEfficient.peft.lora.auto.QEffAutoLoraModelForCausalLM.download_adapter"><code class="docutils literal notranslate"><span class="pre">QEffAutoLoraModelForCausalLM.download_adapter()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="source/autoclass.html#QEfficient.peft.lora.auto.QEffAutoLoraModelForCausalLM.load_adapter"><code class="docutils literal notranslate"><span class="pre">QEffAutoLoraModelForCausalLM.load_adapter()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="source/autoclass.html#QEfficient.peft.lora.auto.QEffAutoLoraModelForCausalLM.unload_adapter"><code class="docutils literal notranslate"><span class="pre">QEffAutoLoraModelForCausalLM.unload_adapter()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="source/autoclass.html#QEfficient.peft.lora.auto.QEffAutoLoraModelForCausalLM.export"><code class="docutils literal notranslate"><span class="pre">QEffAutoLoraModelForCausalLM.export()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="source/autoclass.html#QEfficient.peft.lora.auto.QEffAutoLoraModelForCausalLM.generate"><code class="docutils literal notranslate"><span class="pre">QEffAutoLoraModelForCausalLM.generate()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="source/autoclass.html#qeffautomodelforimagetexttotext"><code class="docutils literal notranslate"><span class="pre">QEFFAutoModelForImageTextToText</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="source/autoclass.html#QEfficient.transformers.models.modeling_auto.QEFFAutoModelForImageTextToText"><code class="docutils literal notranslate"><span class="pre">QEFFAutoModelForImageTextToText</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="source/autoclass.html#qeffautomodelforspeechseq2seq"><code class="docutils literal notranslate"><span class="pre">QEFFAutoModelForSpeechSeq2Seq</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="source/autoclass.html#QEfficient.transformers.models.modeling_auto.QEFFAutoModelForSpeechSeq2Seq"><code class="docutils literal notranslate"><span class="pre">QEFFAutoModelForSpeechSeq2Seq</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="source/autoclass.html#QEfficient.transformers.models.modeling_auto.QEFFAutoModelForSpeechSeq2Seq.export"><code class="docutils literal notranslate"><span class="pre">QEFFAutoModelForSpeechSeq2Seq.export()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="source/autoclass.html#QEfficient.transformers.models.modeling_auto.QEFFAutoModelForSpeechSeq2Seq.compile"><code class="docutils literal notranslate"><span class="pre">QEFFAutoModelForSpeechSeq2Seq.compile()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="source/autoclass.html#QEfficient.transformers.models.modeling_auto.QEFFAutoModelForSpeechSeq2Seq.generate"><code class="docutils literal notranslate"><span class="pre">QEFFAutoModelForSpeechSeq2Seq.generate()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="source/cli_api.html">CLI API Reference</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="source/cli_api.html#module-QEfficient.cloud.infer.main"><code class="docutils literal notranslate"><span class="pre">QEfficient.cloud.infer</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="source/cli_api.html#module-QEfficient.cloud.execute.main"><code class="docutils literal notranslate"><span class="pre">QEfficient.cloud.execute</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="source/cli_api.html#qefficient-cloud-compile"><code class="docutils literal notranslate"><span class="pre">QEfficient.cloud.compile</span></code></a></li>
@@ -205,70 +267,75 @@
 <li class="toctree-l2"><a class="reference internal" href="source/cli_api.html#qefficient-cloud-finetune"><code class="docutils literal notranslate"><span class="pre">QEfficient.cloud.finetune</span></code></a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="source/python_api.html">Python API</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="source/python_api.html#high-level-api">High Level API</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="source/python_api.html#qeffautomodelforcausallm"><code class="docutils literal notranslate"><span class="pre">QEFFAutoModelForCausalLM</span></code></a><ul>
-<li class="toctree-l4"><a class="reference internal" href="source/python_api.html#QEfficient.transformers.models.modeling_auto.QEFFAutoModelForCausalLM"><code class="docutils literal notranslate"><span class="pre">QEFFAutoModelForCausalLM</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="source/python_api.html">Python API Refernce</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="source/python_api.html#module-QEfficient.exporter.export_hf_to_cloud_ai_100"><code class="docutils literal notranslate"><span class="pre">export</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="source/python_api.html#QEfficient.exporter.export_hf_to_cloud_ai_100.qualcomm_efficient_converter"><code class="docutils literal notranslate"><span class="pre">qualcomm_efficient_converter()</span></code></a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="source/python_api.html#qeffautomodel"><code class="docutils literal notranslate"><span class="pre">QEFFAutoModel</span></code></a><ul>
-<li class="toctree-l4"><a class="reference internal" href="source/python_api.html#QEfficient.transformers.models.modeling_auto.QEFFAutoModel"><code class="docutils literal notranslate"><span class="pre">QEFFAutoModel</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="source/python_api.html#module-QEfficient.compile.compile_helper"><code class="docutils literal notranslate"><span class="pre">compile</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="source/python_api.html#QEfficient.compile.compile_helper.compile"><code class="docutils literal notranslate"><span class="pre">compile()</span></code></a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="source/python_api.html#qeffautopeftmodelforcausallm"><code class="docutils literal notranslate"><span class="pre">QEffAutoPeftModelForCausalLM</span></code></a><ul>
-<li class="toctree-l4"><a class="reference internal" href="source/python_api.html#QEfficient.peft.auto.QEffAutoPeftModelForCausalLM"><code class="docutils literal notranslate"><span class="pre">QEffAutoPeftModelForCausalLM</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="source/python_api.html#module-QEfficient.generation.text_generation_inference"><code class="docutils literal notranslate"><span class="pre">Execute</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="source/python_api.html#QEfficient.generation.text_generation_inference.CloudAI100ExecInfo"><code class="docutils literal notranslate"><span class="pre">CloudAI100ExecInfo</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="source/python_api.html#QEfficient.generation.text_generation_inference.CloudAI100ExecInfoNew"><code class="docutils literal notranslate"><span class="pre">CloudAI100ExecInfoNew</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="source/python_api.html#QEfficient.generation.text_generation_inference.PerfMetrics"><code class="docutils literal notranslate"><span class="pre">PerfMetrics</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="source/python_api.html#QEfficient.generation.text_generation_inference.calculate_latency"><code class="docutils literal notranslate"><span class="pre">calculate_latency()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="source/python_api.html#QEfficient.generation.text_generation_inference.cloud_ai_100_exec_kv"><code class="docutils literal notranslate"><span class="pre">cloud_ai_100_exec_kv()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="source/python_api.html#QEfficient.generation.text_generation_inference.fix_prompt_to_lora_id_mapping"><code class="docutils literal notranslate"><span class="pre">fix_prompt_to_lora_id_mapping()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="source/python_api.html#QEfficient.generation.text_generation_inference.fix_prompts"><code class="docutils literal notranslate"><span class="pre">fix_prompts()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="source/python_api.html#QEfficient.generation.text_generation_inference.get_compilation_dims"><code class="docutils literal notranslate"><span class="pre">get_compilation_dims()</span></code></a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="source/python_api.html#qeffautoloramodelforcausallm"><code class="docutils literal notranslate"><span class="pre">QEffAutoLoraModelForCausalLM</span></code></a><ul>
-<li class="toctree-l4"><a class="reference internal" href="source/python_api.html#QEfficient.peft.lora.auto.QEffAutoLoraModelForCausalLM"><code class="docutils literal notranslate"><span class="pre">QEffAutoLoraModelForCausalLM</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="source/python_api.html#module-QEfficient.exporter.export_hf_to_cloud_ai_100"><code class="docutils literal notranslate"><span class="pre">convert_to_cloud_kvstyle</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="source/python_api.html#QEfficient.exporter.export_hf_to_cloud_ai_100.convert_to_cloud_kvstyle"><code class="docutils literal notranslate"><span class="pre">convert_to_cloud_kvstyle()</span></code></a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="source/python_api.html#qeffautomodelforimagetexttotext"><code class="docutils literal notranslate"><span class="pre">QEFFAutoModelForImageTextToText</span></code></a><ul>
-<li class="toctree-l4"><a class="reference internal" href="source/python_api.html#QEfficient.transformers.models.modeling_auto.QEFFAutoModelForImageTextToText"><code class="docutils literal notranslate"><span class="pre">QEFFAutoModelForImageTextToText</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="source/python_api.html#module-QEfficient.exporter.export_hf_to_cloud_ai_100"><code class="docutils literal notranslate"><span class="pre">convert_to_cloud_bertstyle</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="source/python_api.html#QEfficient.exporter.export_hf_to_cloud_ai_100.convert_to_cloud_bertstyle"><code class="docutils literal notranslate"><span class="pre">convert_to_cloud_bertstyle()</span></code></a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="source/python_api.html#qeffautomodelforspeechseq2seq"><code class="docutils literal notranslate"><span class="pre">QEFFAutoModelForSpeechSeq2Seq</span></code></a><ul>
-<li class="toctree-l4"><a class="reference internal" href="source/python_api.html#QEfficient.transformers.models.modeling_auto.QEFFAutoModelForSpeechSeq2Seq"><code class="docutils literal notranslate"><span class="pre">QEFFAutoModelForSpeechSeq2Seq</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="source/python_api.html#module-QEfficient.utils.device_utils"><code class="docutils literal notranslate"><span class="pre">utils</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="source/python_api.html#QEfficient.utils.device_utils.get_available_device_id"><code class="docutils literal notranslate"><span class="pre">get_available_device_id()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="source/python_api.html#QEfficient.utils.generate_inputs.InputHandler"><code class="docutils literal notranslate"><span class="pre">InputHandler</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="source/python_api.html#QEfficient.utils.generate_inputs.InputHandler.prepare_ort_inputs"><code class="docutils literal notranslate"><span class="pre">InputHandler.prepare_ort_inputs()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="source/python_api.html#QEfficient.utils.generate_inputs.InputHandler.prepare_pytorch_inputs"><code class="docutils literal notranslate"><span class="pre">InputHandler.prepare_pytorch_inputs()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="source/python_api.html#QEfficient.utils.generate_inputs.InputHandler.update_ort_inputs"><code class="docutils literal notranslate"><span class="pre">InputHandler.update_ort_inputs()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="source/python_api.html#QEfficient.utils.generate_inputs.InputHandler.update_ort_outputs"><code class="docutils literal notranslate"><span class="pre">InputHandler.update_ort_outputs()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="source/python_api.html#QEfficient.utils.generate_inputs.InputHandler.update_pytorch_inputs"><code class="docutils literal notranslate"><span class="pre">InputHandler.update_pytorch_inputs()</span></code></a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="source/python_api.html#module-QEfficient.exporter.export_hf_to_cloud_ai_100"><code class="docutils literal notranslate"><span class="pre">export</span></code></a><ul>
-<li class="toctree-l4"><a class="reference internal" href="source/python_api.html#QEfficient.exporter.export_hf_to_cloud_ai_100.qualcomm_efficient_converter"><code class="docutils literal notranslate"><span class="pre">qualcomm_efficient_converter()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="source/python_api.html#QEfficient.utils.generate_inputs.InputHandlerInternVL"><code class="docutils literal notranslate"><span class="pre">InputHandlerInternVL</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="source/python_api.html#QEfficient.utils.generate_inputs.InputHandlerInternVL.prepare_pytorch_inputs"><code class="docutils literal notranslate"><span class="pre">InputHandlerInternVL.prepare_pytorch_inputs()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="source/python_api.html#QEfficient.utils.generate_inputs.InputHandlerInternVL.prepare_vlm_ort_inputs"><code class="docutils literal notranslate"><span class="pre">InputHandlerInternVL.prepare_vlm_ort_inputs()</span></code></a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="source/python_api.html#module-QEfficient.compile.compile_helper"><code class="docutils literal notranslate"><span class="pre">compile</span></code></a><ul>
-<li class="toctree-l4"><a class="reference internal" href="source/python_api.html#QEfficient.compile.compile_helper.compile"><code class="docutils literal notranslate"><span class="pre">compile()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="source/python_api.html#QEfficient.utils.generate_inputs.InputHandlerVLM"><code class="docutils literal notranslate"><span class="pre">InputHandlerVLM</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="source/python_api.html#QEfficient.utils.generate_inputs.InputHandlerVLM.prepare_pytorch_inputs"><code class="docutils literal notranslate"><span class="pre">InputHandlerVLM.prepare_pytorch_inputs()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="source/python_api.html#QEfficient.utils.generate_inputs.InputHandlerVLM.prepare_vlm_ort_inputs"><code class="docutils literal notranslate"><span class="pre">InputHandlerVLM.prepare_vlm_ort_inputs()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="source/python_api.html#QEfficient.utils.generate_inputs.InputHandlerVLM.update_vlm_ort_inputs"><code class="docutils literal notranslate"><span class="pre">InputHandlerVLM.update_vlm_ort_inputs()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="source/python_api.html#QEfficient.utils.generate_inputs.InputHandlerVLM.update_vlm_ort_outputs"><code class="docutils literal notranslate"><span class="pre">InputHandlerVLM.update_vlm_ort_outputs()</span></code></a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="source/python_api.html#module-QEfficient.generation.text_generation_inference"><code class="docutils literal notranslate"><span class="pre">Execute</span></code></a><ul>
-<li class="toctree-l4"><a class="reference internal" href="source/python_api.html#QEfficient.generation.text_generation_inference.CloudAI100ExecInfo"><code class="docutils literal notranslate"><span class="pre">CloudAI100ExecInfo</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="source/python_api.html#QEfficient.generation.text_generation_inference.CloudAI100ExecInfoNew"><code class="docutils literal notranslate"><span class="pre">CloudAI100ExecInfoNew</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="source/python_api.html#QEfficient.generation.text_generation_inference.PerfMetrics"><code class="docutils literal notranslate"><span class="pre">PerfMetrics</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="source/python_api.html#QEfficient.generation.text_generation_inference.calculate_latency"><code class="docutils literal notranslate"><span class="pre">calculate_latency()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="source/python_api.html#QEfficient.generation.text_generation_inference.cloud_ai_100_exec_kv"><code class="docutils literal notranslate"><span class="pre">cloud_ai_100_exec_kv()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="source/python_api.html#QEfficient.generation.text_generation_inference.fix_prompt_to_lora_id_mapping"><code class="docutils literal notranslate"><span class="pre">fix_prompt_to_lora_id_mapping()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="source/python_api.html#QEfficient.generation.text_generation_inference.fix_prompts"><code class="docutils literal notranslate"><span class="pre">fix_prompts()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="source/python_api.html#QEfficient.generation.text_generation_inference.get_compilation_dims"><code class="docutils literal notranslate"><span class="pre">get_compilation_dims()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="source/python_api.html#QEfficient.utils.run_utils.ApiRunner"><code class="docutils literal notranslate"><span class="pre">ApiRunner</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="source/python_api.html#QEfficient.utils.run_utils.ApiRunner.run_hf_model_on_pytorch"><code class="docutils literal notranslate"><span class="pre">ApiRunner.run_hf_model_on_pytorch()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="source/python_api.html#QEfficient.utils.run_utils.ApiRunner.run_hf_model_on_pytorch_CB"><code class="docutils literal notranslate"><span class="pre">ApiRunner.run_hf_model_on_pytorch_CB()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="source/python_api.html#QEfficient.utils.run_utils.ApiRunner.run_kv_model_on_cloud_ai_100"><code class="docutils literal notranslate"><span class="pre">ApiRunner.run_kv_model_on_cloud_ai_100()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="source/python_api.html#QEfficient.utils.run_utils.ApiRunner.run_kv_model_on_ort"><code class="docutils literal notranslate"><span class="pre">ApiRunner.run_kv_model_on_ort()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="source/python_api.html#QEfficient.utils.run_utils.ApiRunner.run_kv_model_on_pytorch"><code class="docutils literal notranslate"><span class="pre">ApiRunner.run_kv_model_on_pytorch()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="source/python_api.html#QEfficient.utils.run_utils.ApiRunner.run_ort_session"><code class="docutils literal notranslate"><span class="pre">ApiRunner.run_ort_session()</span></code></a></li>
 </ul>
 </li>
+<li class="toctree-l3"><a class="reference internal" href="source/python_api.html#QEfficient.utils.run_utils.ApiRunnerInternVL"><code class="docutils literal notranslate"><span class="pre">ApiRunnerInternVL</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="source/python_api.html#QEfficient.utils.run_utils.ApiRunnerInternVL.run_vlm_hf_model_on_pytorch"><code class="docutils literal notranslate"><span class="pre">ApiRunnerInternVL.run_vlm_hf_model_on_pytorch()</span></code></a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="source/python_api.html#low-level-api">Low Level API</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="source/python_api.html#module-QEfficient.exporter.export_hf_to_cloud_ai_100"><code class="docutils literal notranslate"><span class="pre">convert_to_cloud_kvstyle</span></code></a><ul>
-<li class="toctree-l4"><a class="reference internal" href="source/python_api.html#QEfficient.exporter.export_hf_to_cloud_ai_100.convert_to_cloud_kvstyle"><code class="docutils literal notranslate"><span class="pre">convert_to_cloud_kvstyle()</span></code></a></li>
-</ul>
-</li>
-<li class="toctree-l3"><a class="reference internal" href="source/python_api.html#module-QEfficient.exporter.export_hf_to_cloud_ai_100"><code class="docutils literal notranslate"><span class="pre">convert_to_cloud_bertstyle</span></code></a><ul>
-<li class="toctree-l4"><a class="reference internal" href="source/python_api.html#QEfficient.exporter.export_hf_to_cloud_ai_100.convert_to_cloud_bertstyle"><code class="docutils literal notranslate"><span class="pre">convert_to_cloud_bertstyle()</span></code></a></li>
-</ul>
-</li>
-<li class="toctree-l3"><a class="reference internal" href="source/python_api.html#module-QEfficient.utils.device_utils"><code class="docutils literal notranslate"><span class="pre">utils</span></code></a><ul>
-<li class="toctree-l4"><a class="reference internal" href="source/python_api.html#QEfficient.utils.device_utils.get_available_device_id"><code class="docutils literal notranslate"><span class="pre">get_available_device_id()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="source/python_api.html#QEfficient.utils.generate_inputs.InputHandler"><code class="docutils literal notranslate"><span class="pre">InputHandler</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="source/python_api.html#QEfficient.utils.generate_inputs.InputHandlerInternVL"><code class="docutils literal notranslate"><span class="pre">InputHandlerInternVL</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="source/python_api.html#QEfficient.utils.generate_inputs.InputHandlerVLM"><code class="docutils literal notranslate"><span class="pre">InputHandlerVLM</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="source/python_api.html#QEfficient.utils.run_utils.ApiRunner"><code class="docutils literal notranslate"><span class="pre">ApiRunner</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="source/python_api.html#QEfficient.utils.run_utils.ApiRunnerInternVL"><code class="docutils literal notranslate"><span class="pre">ApiRunnerInternVL</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="source/python_api.html#QEfficient.utils.run_utils.ApiRunnerVlm"><code class="docutils literal notranslate"><span class="pre">ApiRunnerVlm</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="source/python_api.html#QEfficient.utils.run_utils.ApiRunnerVlm"><code class="docutils literal notranslate"><span class="pre">ApiRunnerVlm</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="source/python_api.html#QEfficient.utils.run_utils.ApiRunnerVlm.run_ort_session"><code class="docutils literal notranslate"><span class="pre">ApiRunnerVlm.run_ort_session()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="source/python_api.html#QEfficient.utils.run_utils.ApiRunnerVlm.run_vlm_hf_model_on_pytorch"><code class="docutils literal notranslate"><span class="pre">ApiRunnerVlm.run_vlm_hf_model_on_pytorch()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="source/python_api.html#QEfficient.utils.run_utils.ApiRunnerVlm.run_vlm_kv_model_on_ort"><code class="docutils literal notranslate"><span class="pre">ApiRunnerVlm.run_vlm_kv_model_on_ort()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="source/python_api.html#QEfficient.utils.run_utils.ApiRunnerVlm.run_vlm_kv_model_on_pytorch"><code class="docutils literal notranslate"><span class="pre">ApiRunnerVlm.run_vlm_kv_model_on_pytorch()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="source/python_api.html#QEfficient.utils.run_utils.ApiRunnerVlm.setup_ort_session"><code class="docutils literal notranslate"><span class="pre">ApiRunnerVlm.setup_ort_session()</span></code></a></li>
 </ul>
 </li>
 </ul>
@@ -287,7 +354,6 @@
 <li class="toctree-l2"><a class="reference internal" href="source/finetune.html#usage">Usage</a></li>
 <li class="toctree-l2"><a class="reference internal" href="source/finetune.html#visualization">Visualization</a></li>
 <li class="toctree-l2"><a class="reference internal" href="source/finetune.html#some-features-functionalities-of-fine-tuning-stack">Some features/functionalities of fine-tuning stack:</a></li>
-<li class="toctree-l2"><a class="reference internal" href="source/finetune.html#fine-tuning-on-custom-dataset">Fine-Tuning on custom dataset</a></li>
 </ul>
 </li>
 </ul>
@@ -324,7 +390,7 @@
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright 2024, Qualcomm.</p>
+    <p>&#169; Copyright 2025, Qualcomm.</p>
   </div>
 
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
@@ -345,10 +411,8 @@
     <div class="rst-other-versions">
       Versions
       <dl>
-        <dd><a href="index.html">main</a></dd>
-        <dd><a href="source/release/v1.18/index.html">release/v1.18</a></dd>
-        <dd><a href="source/release/v1.19/index.html">release/v1.19</a></dd>
-        <dd><a href="source/release/v1.20/index.html">release/v1.20(beta)</a></dd>
+        <dd><a href="../index.html">main</a></dd>
+        <dd><a href="release/v1.18/index.html">release/v1.18</a></dd>
       </dl>
     </div>
 </div><script>

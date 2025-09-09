@@ -65,6 +65,7 @@
 <p class="caption" role="heading"><span class="caption-text">Inference on Cloud AI 100</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../../source/quick_start.html">Quick Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../source/autoclass.html">Auto Class</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../source/cli_api.html">Command Line Interface Use (CLI)</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../source/python_api.html">Python API</a></li>
 </ul>
@@ -176,7 +177,7 @@
         <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;Average Prefill time a.k.a TTFT is= </span><span class="si">{</span><span class="nb">round</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">perf_metrics</span><span class="o">.</span><span class="n">prefill_time</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">)</span><span class="si">}</span><span class="s2"> sec</span><span class="se">\</span>
 <span class="s2">        </span><span class="se">\n</span><span class="s2">Decode is= </span><span class="si">{</span><span class="nb">round</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">perf_metrics</span><span class="o">.</span><span class="n">decode_perf</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">)</span><span class="si">}</span><span class="s2"> tokens/sec</span><span class="se">\</span>
 <span class="s2">        </span><span class="se">\n</span><span class="s2">Total is= </span><span class="si">{</span><span class="nb">round</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">perf_metrics</span><span class="o">.</span><span class="n">total_perf</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">)</span><span class="si">}</span><span class="s2"> tokens/sec</span><span class="se">\</span>
-<span class="s2">        </span><span class="se">\n</span><span class="s2">Total (E2E) inference time is= </span><span class="si">{</span><span class="nb">round</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">perf_metrics</span><span class="o">.</span><span class="n">total_time</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">)</span><span class="si">}</span><span class="s2"> tokens/sec&quot;</span></div>
+<span class="s2">        </span><span class="se">\n</span><span class="s2">Total (E2E) inference time is= </span><span class="si">{</span><span class="nb">round</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">perf_metrics</span><span class="o">.</span><span class="n">total_time</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">)</span><span class="si">}</span><span class="s2"> sec&quot;</span></div>
 
 
 <div class="viewcode-block" id="CloudAI100ExecInfoNew"><a class="viewcode-back" href="../../../source/python_api.html#QEfficient.generation.text_generation_inference.CloudAI100ExecInfoNew">[docs]</a><span class="nd">@dataclass</span>
@@ -1248,7 +1249,7 @@
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright 2024, Qualcomm.</p>
+    <p>&#169; Copyright 2025, Qualcomm.</p>
   </div>
 
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a

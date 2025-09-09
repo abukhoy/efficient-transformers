@@ -68,6 +68,7 @@
 <p class="caption" role="heading"><span class="caption-text">Inference on Cloud AI 100</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="quick_start.html">Quick Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="autoclass.html">Auto Classes</a></li>
 <li class="toctree-l1"><a class="reference internal" href="cli_api.html">Command Line Interface Use (CLI)</a></li>
 <li class="toctree-l1"><a class="reference internal" href="python_api.html">Python API</a></li>
 </ul>
@@ -83,8 +84,10 @@
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#visualization">Visualization</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#some-features-functionalities-of-fine-tuning-stack">Some features/functionalities of fine-tuning stack:</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#fine-tuning-on-custom-dataset">Fine-Tuning on custom dataset</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#some-features-functionalities-of-fine-tuning-stack">Some features/functionalities of fine-tuning stack:</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#steps-to-fine-tune-with-a-custom-dataset">🔧 Steps to Fine-Tune with a Custom Dataset</a></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
@@ -201,41 +204,100 @@ to visualise the data,</p>
 2) Gradient Checkpointing: By default, gradient checkpointing is disabled. To enable it, command line argument gradient_accumulation_steps has to be passed.
 </pre></div>
 </div>
-</section>
-<section id="fine-tuning-on-custom-dataset">
-<h2>Fine-Tuning on custom dataset<a class="headerlink" href="#fine-tuning-on-custom-dataset" title="Permalink to this heading"></a></h2>
-<p>To run fine tuning for any user specific dataset, prepare the dataset using the following steps:</p>
-<ol class="arabic simple">
-<li><p>Create a directory named ‘dataset’ inside efficient-transformers.</p></li>
-<li><p>Inside this directory, create a file named ‘custom_dataset.py’.</p></li>
-<li><p>Inside the newly created efficient-transformers/dataset/custom_dataset.py, define a function named ‘get_custom_dataset’.</p></li>
-<li><p>get_custom_dataset() should have following 4 parameters:  dataset_config, tokenizer, split, context_length.</p></li>
-<li><p>Inside get_custom_dataset(), user needs to apply prompt and tokenize the dataset accordingly. Please refer the below template on how to define get_custom_dataset().</p></li>
-<li><p>For examples, please refer python files present in <a class="reference external" href="https://github.com/quic/efficient-transformers/tree/main/QEfficient/finetune/dataset">dataset</a>. In case of Samsum dataset, get_preprocessed_samsum() of efficient-transformers/QEfficient/finetune/dataset/samsum_dataset.py is called.</p></li>
-<li><p>In <a class="reference external" href="https://github.com/quic/efficient-transformers/blob/main/QEfficient/finetune/configs/dataset_config.py">dataset_config.py</a>, for custom_dataset class, pass the appropriate value for train_split and test_split. As an alternative, these values can be passed as command line arguments as well with the finetune command. For example “–train_split train”.</p></li>
-<li><p>While running fine tuning, pass argument “-–dataset custom_dataset” to finetune on custom dataset.</p></li>
-</ol>
-<p>Template for get_custom_dataset() to be defined inside efficient-transformers/dataset/custom_dataset.py is as follows:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">get_custom_dataset</span><span class="p">(</span><span class="n">dataset_config</span><span class="p">,</span> <span class="n">tokenizer</span><span class="p">,</span> <span class="n">split</span><span class="p">,</span> <span class="n">context_length</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<section id="steps-to-fine-tune-with-a-custom-dataset">
+<h3>🔧 Steps to Fine-Tune with a Custom Dataset<a class="headerlink" href="#steps-to-fine-tune-with-a-custom-dataset" title="Permalink to this heading"></a></h3>
+<ol class="arabic">
+<li><p><strong>Launching Fine-Tuning with a Custom Dataset</strong></p>
+<ul>
+<li><p>Use the following command-line arguments to begin fine-tuning using a custom dataset:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>--dataset<span class="w"> </span>custom_dataset<span class="w"> </span>--dataset_config<span class="w"> </span>data_config.json
+</pre></div>
+</div>
+</li>
+<li><p>The <code class="docutils literal notranslate"><span class="pre">--dataset_config</span></code> argument is mandatory when <code class="docutils literal notranslate"><span class="pre">--dataset</span> <span class="pre">custom_dataset</span></code> is specified. The <code class="docutils literal notranslate"><span class="pre">data_config.json</span></code> file contains essential parameters used during dataset preprocessing.</p>
+<p><strong>Example <code class="docutils literal notranslate"><span class="pre">data_config.json</span></code> File</strong></p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+<span class="nt">&quot;train_split&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;train&quot;</span><span class="p">,</span>
+<span class="nt">&quot;test_split&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;test&quot;</span><span class="p">,</span>
+<span class="nt">&quot;test_split_ratio&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.15</span><span class="p">,</span>
+<span class="nt">&quot;preproc_file&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;sample_dataset_preproc.py:preprocessing_fn&quot;</span><span class="p">,</span>
+<span class="nt">&quot;collate_file&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;sample_dataset_preproc.py:data_collate_fn&quot;</span><span class="p">,</span>
+<span class="nt">&quot;disc_style&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;sarcasm_more&quot;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</li>
+</ul>
+</li>
+<li><p><strong>Specifying the Preprocessing Function</strong></p>
+<ul>
+<li><p>In <code class="docutils literal notranslate"><span class="pre">data_config.json</span></code>, include a <code class="docutils literal notranslate"><span class="pre">&quot;preproc_file&quot;</span></code> mandatory key to define the path to your preprocessing Python file and the function within it.</p></li>
+<li><p>Use the format <code class="docutils literal notranslate"><span class="pre">&quot;filename.py:function_name&quot;</span></code>. The filename and function name both are required.
+<em>Example:</em></p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="nt">&quot;preproc_file&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;sample_dataset_preproc.py:preprocessing_fn&quot;</span>
+</pre></div>
+</div>
+</li>
+<li><p>The preprocessing function must follow the structure below. The function parameters and the return type of the function should not be altered. The sample illustrates <code class="docutils literal notranslate"><span class="pre">apply_prompt_template</span></code> and <code class="docutils literal notranslate"><span class="pre">tokenize</span></code> as sub-functions, but we can define our own sub-functions as needed. For reference, check the example files in the <a class="reference external" href="https://github.com/quic/efficient-transformers/tree/main/QEfficient/finetune/dataset">./QEfficient/finetune/dataset/</a> directory.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">preprocessing_fn</span><span class="p">(</span><span class="n">dataset_config</span><span class="p">,</span> <span class="n">tokenizer</span><span class="p">,</span> <span class="n">split</span><span class="p">,</span> <span class="n">context_length</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="c1"># Load the dataset or read from the disk</span>
+    <span class="c1"># ...</span>
 
-    <span class="c1"># load dataset</span>
-    <span class="c1"># based on split, retrieve only the specific portion of the dataset (train or eval) either here or at the last</span>
+    <span class="c1"># Split the dataset into train and test splits if needed,</span>
+    <span class="c1"># and use the appropriate split based on the &#39;split&#39; argument.</span>
+    <span class="c1"># ...</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">apply_prompt_template</span><span class="p">(</span><span class="n">example</span><span class="p">):</span>
+        <span class="c1"># Apply prompt formatting to each datapoint (e.g., example)</span>
+        <span class="c1"># ...</span>
+        <span class="k">return</span> <span class="n">example</span> <span class="c1"># Return the processed example</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">tokenize</span><span class="p">(</span><span class="n">example</span><span class="p">):</span>
+        <span class="c1"># Tokenize the formatted datapoint (e.g., example)</span>
+        <span class="c1"># ...</span>
+        <span class="k">return</span> <span class="n">tokenizer</span><span class="p">(</span><span class="n">example</span><span class="p">[</span><span class="s2">&quot;text&quot;</span><span class="p">],</span> <span class="n">truncation</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">max_length</span><span class="o">=</span><span class="n">context_length</span><span class="p">)</span> <span class="c1"># Example tokenization</span>
+
+    <span class="c1"># Apply prompt template to preprocess it in accordance to the dataset and task.</span>
+    <span class="n">dataset</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">apply_prompt_template</span><span class="p">,</span> <span class="o">...</span><span class="p">)</span>
+
+    <span class="c1"># Finally, tokenize the dataset</span>
+    <span class="n">dataset</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">tokenize</span><span class="p">,</span> <span class="n">batched</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">remove_columns</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;text&#39;</span><span class="p">])</span> <span class="c1"># Example batched tokenization</span>
     
-    <span class="k">def</span><span class="w"> </span><span class="nf">apply_prompt_template</span><span class="p">():</span>
-        <span class="c1"># transform the passed datapoint by applying the prompt on it </span>
-    
-    <span class="k">def</span><span class="w"> </span><span class="nf">tokenize</span><span class="p">():</span>
-        <span class="c1"># tokenize the passed datapoint</span>
-    
-    <span class="c1"># define the prompt</span>
-    <span class="c1"># call apply_prompt_template() for each data point:</span>
-    <span class="c1"># dataset = dataset.map(apply_prompt_template ,&lt;other args&gt;)</span>
-    <span class="c1"># call tokenize() for each data point:</span>
-    <span class="c1"># dataset = dataset.map(tokenize, &lt;other args&gt;)</span>
-    
+    <span class="c1"># Each sample in the dataset should have keys acceptable by the HF</span>
+    <span class="c1"># model and the loss function.</span>
+    <span class="c1"># Typically, for CausalLM models used with &#39;generation&#39; task_mode,</span>
+    <span class="c1"># the keys should be &#39;input_ids&#39;, &#39;attention_mask&#39;, and &#39;labels&#39;.</span>
     <span class="k">return</span> <span class="n">dataset</span>
 </pre></div>
 </div>
+<ul class="simple">
+<li><p>In the sample preprocessing function above, the <code class="docutils literal notranslate"><span class="pre">split</span></code> variable takes its value from <code class="docutils literal notranslate"><span class="pre">data_config.json</span></code>. For the training dataset, the value will be taken from the <code class="docutils literal notranslate"><span class="pre">&quot;train_split&quot;</span></code> key, and for the evaluation/test dataset, it will be taken from the <code class="docutils literal notranslate"><span class="pre">&quot;test_split&quot;</span></code> key.</p></li>
+<li><p>Additional arguments needed for the preprocessing function can be passed in <code class="docutils literal notranslate"><span class="pre">data_config.json</span></code> and will be available via the <code class="docutils literal notranslate"><span class="pre">dataset_config</span></code> variable within the function. For instance, in the sample config above, <code class="docutils literal notranslate"><span class="pre">&quot;test_split_ratio&quot;</span></code> and <code class="docutils literal notranslate"><span class="pre">&quot;disc_style&quot;</span></code> keys can be used in the preprocessing function to define the test split ratio and style of the dataset. These values are accessed through the <code class="docutils literal notranslate"><span class="pre">dataset_config</span></code> variable. Check out the sample preprocessing file at <a class="reference external" href="https://github.com/quic/efficient-transformers/tree/main/QEfficient/finetune/dataset/custom_dataset/sample_dataset_preproc.py">./QEfficient/finetune/dataset/custom_dataset/sample_dataset_preproc.py</a>.</p></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p><strong>Custom Collate Function for Batching</strong></p>
+<ul>
+<li><p>When using a batch size greater than 1, we may need to override the default collate (batching different samples together in a batch) behavior by including a <code class="docutils literal notranslate"><span class="pre">&quot;collate_file&quot;</span></code> key in <code class="docutils literal notranslate"><span class="pre">data_config.json</span></code>.</p></li>
+<li><p>Use the same <code class="docutils literal notranslate"><span class="pre">&quot;file.py:function&quot;</span></code> format. If omitted, the default Hugging Face <code class="docutils literal notranslate"><span class="pre">DataCollatorForSeq2Seq</span></code> is typically used, which pads sequences to the longest length in the batch.</p></li>
+<li><p>A custom collate function must follow the structure below. The function parameters and the return type of the function should not be altered:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">get_data_collator</span><span class="p">(</span><span class="n">tokenizer</span><span class="p">):</span>
+    <span class="c1"># Define and return a custom collate_fn here</span>
+    <span class="c1"># ...</span>
+ 
+    <span class="c1"># This function should take a list of samples and return a batch.</span>
+    <span class="c1"># Example:</span>
+    <span class="c1"># from transformers import DataCollatorForLanguageModeling</span>
+    <span class="c1"># return DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm=False)</span>
+</pre></div>
+</div>
+</li>
+</ul>
+</li>
+</ol>
+<hr class="docutils" />
+</section>
 </section>
 </section>
 
@@ -250,7 +312,7 @@ to visualise the data,</p>
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright 2024, Qualcomm.</p>
+    <p>&#169; Copyright 2025, Qualcomm.</p>
   </div>
 
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
@@ -273,8 +335,6 @@ to visualise the data,</p>
       <dl>
         <dd><a href="../index.html">main</a></dd>
         <dd><a href="release/v1.18/index.html">release/v1.18</a></dd>
-        <dd><a href="release/v1.19/index.html">release/v1.19</a></dd>
-        <dd><a href="release/v1.20/index.html">release/v1.20(beta)</a></dd>
       </dl>
     </div>
 </div><script>

@@ -65,6 +65,7 @@
 <p class="caption" role="heading"><span class="caption-text">Inference on Cloud AI 100</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../../../source/quick_start.html">Quick Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../source/autoclass.html">Auto Class</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../../source/cli_api.html">Command Line Interface Use (CLI)</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../../source/python_api.html">Python API</a></li>
 </ul>
@@ -121,7 +122,6 @@
 <span class="c1">#</span>
 <span class="c1"># ----------------------------------------------------------------------------</span>
 
-<span class="kn">import</span><span class="w"> </span><span class="nn">hashlib</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">time</span><span class="w"> </span><span class="kn">import</span> <span class="n">perf_counter</span>
@@ -172,7 +172,6 @@
     <span class="n">constants</span><span class="p">,</span>
     <span class="n">get_padding_shape_from_config</span><span class="p">,</span>
 <span class="p">)</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">QEfficient.utils.cache</span><span class="w"> </span><span class="kn">import</span> <span class="n">to_hashable</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">QEfficient.utils.logging_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">logger</span>
 
 
@@ -191,7 +190,7 @@
         <span class="p">):</span>
             <span class="k">raise</span> <span class="ne">AssertionError</span><span class="p">(</span><span class="s2">&quot;Please use `from_pretrained` method to load quantized models&quot;</span><span class="p">)</span>
 
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="fm">__repr__</span><span class="p">()</span>
@@ -248,7 +247,7 @@
         <span class="k">return</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">inputs</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="p">[</span><span class="n">iinfo</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">iinfo</span> <span class="ow">in</span> <span class="n">inputs_info</span><span class="p">]}</span>
 
 
-<div class="viewcode-block" id="QEFFAutoModel"><a class="viewcode-back" href="../../../../source/python_api.html#QEfficient.transformers.models.modeling_auto.QEFFAutoModel">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">QEFFAutoModel</span><span class="p">(</span><span class="n">QEFFTransformersBase</span><span class="p">):</span>
+<div class="viewcode-block" id="QEFFAutoModel"><a class="viewcode-back" href="../../../../source/autoclass.html#QEfficient.transformers.models.modeling_auto.QEFFAutoModel">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">QEFFAutoModel</span><span class="p">(</span><span class="n">QEFFTransformersBase</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    The QEFFAutoModel class is designed for manipulating any transformer model from the HuggingFace hub.</span>
 <span class="sd">    Although it is possible to initialize the class directly, we highly recommend using the ``from_pretrained`` method for initialization.</span>
@@ -280,7 +279,7 @@
     <span class="n">_onnx_transforms</span> <span class="o">=</span> <span class="p">[</span><span class="n">FP16ClipTransform</span><span class="p">,</span> <span class="n">SplitTensorsTransform</span><span class="p">]</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">:</span> <span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">,</span> <span class="n">pooling</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
         <span class="c1"># Make Embedding specific transforms like appending pooling</span>
         <span class="k">if</span> <span class="n">pooling</span><span class="p">:</span>
@@ -288,7 +287,7 @@
 
         <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">base_model</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">use_cache</span> <span class="o">=</span> <span class="kc">True</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">pretrained_model_name_or_path</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;pretrained_model_name_or_path&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">hash_params</span><span class="p">[</span><span class="s2">&quot;qeff_auto_class&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span>
 
     <span class="nd">@classmethod</span>
     <span class="nd">@with_replaced_quantizers</span>
@@ -341,34 +340,16 @@
         <span class="n">kv_offload</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;kv_offload&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">model</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span> <span class="ow">in</span> <span class="n">MISCLASSIFIED_CAUSAL_LM_TO_QEFF_AUTO_CLASS_MAP</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">MISCLASSIFIED_CAUSAL_LM_TO_QEFF_AUTO_CLASS_MAP</span><span class="p">[</span><span class="n">model</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">](</span>
-                <span class="n">model</span><span class="p">,</span> <span class="n">kv_offload</span><span class="o">=</span><span class="n">kv_offload</span>
+                <span class="n">model</span><span class="p">,</span> <span class="n">kv_offload</span><span class="o">=</span><span class="n">kv_offload</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
             <span class="p">)</span>
 
         <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">pretrained_model_name_or_path</span><span class="o">=</span><span class="n">pretrained_model_name_or_path</span><span class="p">,</span> <span class="n">pooling</span><span class="o">=</span><span class="n">pooling</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">model_hash</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="c1"># NOTE: model_config.to_diff_dict() has &quot;_name_or_path&quot; attribute which is the model card name or path.</span>
-        <span class="c1"># Using same card name will result in same hash. But, using a relative path for one run and</span>
-        <span class="c1"># absolute path for another run will result in different hash.</span>
-        <span class="c1"># The added complexity to resolve different paths to same location is not worth pursuing.</span>
-        <span class="c1"># Instead, advise the user to always provide same relative paths or absolute paths for local models.</span>
-
-        <span class="c1"># Compute the hash with: model_config, transforms</span>
-        <span class="n">mhash</span> <span class="o">=</span> <span class="n">hashlib</span><span class="o">.</span><span class="n">sha256</span><span class="p">()</span>
-        <span class="n">mhash</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">to_hashable</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">to_diff_dict</span><span class="p">()))</span>
-        <span class="n">mhash</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">to_hashable</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_transform_names</span><span class="p">()))</span>
-
-        <span class="n">mhash</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">to_hashable</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pretrained_model_name_or_path</span><span class="p">))</span>
-
-        <span class="n">mhash</span> <span class="o">=</span> <span class="n">mhash</span><span class="o">.</span><span class="n">hexdigest</span><span class="p">()[:</span><span class="mi">16</span><span class="p">]</span>
-        <span class="k">return</span> <span class="n">mhash</span>
-
-    <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">get_model_config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="vm">__dict__</span>
 
-<div class="viewcode-block" id="QEFFAutoModel.export"><a class="viewcode-back" href="../../../../source/python_api.html#QEfficient.transformers.models.modeling_auto.QEFFAutoModel.export">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">export</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">export_dir</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<div class="viewcode-block" id="QEFFAutoModel.export"><a class="viewcode-back" href="../../../../source/autoclass.html#QEfficient.transformers.models.modeling_auto.QEFFAutoModel.export">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">export</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">export_dir</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Exports the model to ``ONNX`` format using ``torch.onnx.export``.</span>
 
@@ -397,7 +378,7 @@
             <span class="n">export_dir</span><span class="o">=</span><span class="n">export_dir</span><span class="p">,</span>
         <span class="p">)</span></div>
 
-<div class="viewcode-block" id="QEFFAutoModel.compile"><a class="viewcode-back" href="../../../../source/python_api.html#QEfficient.transformers.models.modeling_auto.QEFFAutoModel.compile">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">compile</span><span class="p">(</span>
+<div class="viewcode-block" id="QEFFAutoModel.compile"><a class="viewcode-back" href="../../../../source/autoclass.html#QEfficient.transformers.models.modeling_auto.QEFFAutoModel.compile">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">compile</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">onnx_path</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">compile_dir</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -441,8 +422,8 @@
         <span class="p">]</span>
 
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_compile</span><span class="p">(</span>
-            <span class="n">onnx_path</span><span class="p">,</span>
-            <span class="n">compile_dir</span><span class="p">,</span>
+            <span class="n">onnx_path</span><span class="o">=</span><span class="n">onnx_path</span><span class="p">,</span>
+            <span class="n">compile_dir</span><span class="o">=</span><span class="n">compile_dir</span><span class="p">,</span>
             <span class="n">compile_only</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
             <span class="n">specializations</span><span class="o">=</span><span class="n">specializations</span><span class="p">,</span>
             <span class="n">convert_to_fp16</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
@@ -452,7 +433,7 @@
             <span class="o">**</span><span class="n">compiler_options</span><span class="p">,</span>
         <span class="p">)</span></div>
 
-<div class="viewcode-block" id="QEFFAutoModel.generate"><a class="viewcode-back" href="../../../../source/python_api.html#QEfficient.transformers.models.modeling_auto.QEFFAutoModel.generate">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">generate</span><span class="p">(</span>
+<div class="viewcode-block" id="QEFFAutoModel.generate"><a class="viewcode-back" href="../../../../source/autoclass.html#QEfficient.transformers.models.modeling_auto.QEFFAutoModel.generate">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">generate</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">inputs</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span>
         <span class="n">device_ids</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -478,7 +459,7 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">pytorch_feature_generate</span><span class="p">(</span><span class="n">model</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> <span class="n">inputs</span><span class="o">=</span><span class="n">inputs</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="QEFFAutoModel.cloud_ai_100_feature_generate"><a class="viewcode-back" href="../../../../source/python_api.html#QEfficient.transformers.models.modeling_auto.QEFFAutoModel.cloud_ai_100_feature_generate">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">cloud_ai_100_feature_generate</span><span class="p">(</span>
+<div class="viewcode-block" id="QEFFAutoModel.cloud_ai_100_feature_generate"><a class="viewcode-back" href="../../../../source/autoclass.html#QEfficient.transformers.models.modeling_auto.QEFFAutoModel.cloud_ai_100_feature_generate">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">cloud_ai_100_feature_generate</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">inputs</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span>
         <span class="n">device_ids</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">],</span>
@@ -540,7 +521,7 @@
             <span class="n">outputs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">qpc_session</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">inputs</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">outputs</span></div>
 
-<div class="viewcode-block" id="QEFFAutoModel.pytorch_feature_generate"><a class="viewcode-back" href="../../../../source/python_api.html#QEfficient.transformers.models.modeling_auto.QEFFAutoModel.pytorch_feature_generate">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">pytorch_feature_generate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">inputs</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]:</span>
+<div class="viewcode-block" id="QEFFAutoModel.pytorch_feature_generate"><a class="viewcode-back" href="../../../../source/autoclass.html#QEfficient.transformers.models.modeling_auto.QEFFAutoModel.pytorch_feature_generate">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">pytorch_feature_generate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">inputs</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Generates features from a list of text prompts using a PyTorch model.</span>
 
@@ -564,12 +545,15 @@
     <span class="p">]</span>
     <span class="n">_onnx_transforms</span> <span class="o">=</span> <span class="p">[</span><span class="n">FP16ClipTransform</span><span class="p">,</span> <span class="n">SplitTensorsTransform</span><span class="p">]</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">:</span> <span class="n">nn</span><span class="o">.</span><span class="n">modules</span><span class="p">):</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">:</span> <span class="n">nn</span><span class="o">.</span><span class="n">modules</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">get_qeff_vision_encoder</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">hash_params</span><span class="p">[</span><span class="s2">&quot;qeff_auto_class&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="nf">export</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">inputs</span><span class="p">,</span> <span class="n">output_names</span><span class="p">,</span> <span class="n">dynamic_axes</span><span class="p">,</span> <span class="n">export_dir</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_export</span><span class="p">(</span><span class="n">inputs</span><span class="p">,</span> <span class="n">output_names</span><span class="p">,</span> <span class="n">dynamic_axes</span><span class="p">,</span> <span class="n">export_dir</span><span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">export</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">inputs</span><span class="p">,</span> <span class="n">output_names</span><span class="p">,</span> <span class="n">dynamic_axes</span><span class="p">,</span> <span class="n">export_dir</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">offload_pt_weights</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_export</span><span class="p">(</span>
+            <span class="n">inputs</span><span class="p">,</span> <span class="n">output_names</span><span class="p">,</span> <span class="n">dynamic_axes</span><span class="p">,</span> <span class="n">export_dir</span><span class="o">=</span><span class="n">export_dir</span><span class="p">,</span> <span class="n">offload_pt_weights</span><span class="o">=</span><span class="n">offload_pt_weights</span>
+        <span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">compile</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
@@ -594,20 +578,6 @@
             <span class="n">custom_io</span><span class="o">=</span><span class="n">custom_io</span><span class="p">,</span>
             <span class="o">**</span><span class="n">compiler_options</span><span class="p">,</span>
         <span class="p">)</span>
-
-    <span class="nd">@property</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">model_hash</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="c1"># Compute the hash with: model_config, continuous_batching, transforms</span>
-        <span class="n">mhash</span> <span class="o">=</span> <span class="n">hashlib</span><span class="o">.</span><span class="n">sha256</span><span class="p">()</span>
-        <span class="n">mhash</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">to_hashable</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">to_diff_dict</span><span class="p">()))</span>
-        <span class="n">mhash</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">to_hashable</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_transform_names</span><span class="p">()))</span>
-        <span class="n">mhash</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">to_hashable</span><span class="p">({</span><span class="s2">&quot;QEffVisionEncoderForTextImageToTextModel&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">}))</span>
-        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> <span class="s2">&quot;model&quot;</span><span class="p">):</span>
-            <span class="n">mhash</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">to_hashable</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">pretrained_model_name_or_path</span><span class="p">))</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">mhash</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">to_hashable</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">pretrained_model_name_or_path</span><span class="p">))</span>
-        <span class="n">mhash</span> <span class="o">=</span> <span class="n">mhash</span><span class="o">.</span><span class="n">hexdigest</span><span class="p">()[:</span><span class="mi">16</span><span class="p">]</span>
-        <span class="k">return</span> <span class="n">mhash</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">model_name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
@@ -632,12 +602,15 @@
     <span class="p">]</span>
     <span class="n">_onnx_transforms</span> <span class="o">=</span> <span class="p">[</span><span class="n">FP16ClipTransform</span><span class="p">,</span> <span class="n">SplitTensorsTransform</span><span class="p">]</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">):</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">get_qeff_language_decoder</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">hash_params</span><span class="p">[</span><span class="s2">&quot;qeff_auto_class&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="nf">export</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">inputs</span><span class="p">,</span> <span class="n">output_names</span><span class="p">,</span> <span class="n">dynamic_axes</span><span class="p">,</span> <span class="n">export_dir</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_export</span><span class="p">(</span><span class="n">inputs</span><span class="p">,</span> <span class="n">output_names</span><span class="p">,</span> <span class="n">dynamic_axes</span><span class="p">,</span> <span class="n">export_dir</span><span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">export</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">inputs</span><span class="p">,</span> <span class="n">output_names</span><span class="p">,</span> <span class="n">dynamic_axes</span><span class="p">,</span> <span class="n">export_dir</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">offload_pt_weights</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_export</span><span class="p">(</span>
+            <span class="n">inputs</span><span class="p">,</span> <span class="n">output_names</span><span class="p">,</span> <span class="n">dynamic_axes</span><span class="p">,</span> <span class="n">export_dir</span><span class="o">=</span><span class="n">export_dir</span><span class="p">,</span> <span class="n">offload_pt_weights</span><span class="o">=</span><span class="n">offload_pt_weights</span>
+        <span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">compile</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
@@ -662,20 +635,6 @@
             <span class="n">custom_io</span><span class="o">=</span><span class="n">custom_io</span><span class="p">,</span>
             <span class="o">**</span><span class="n">compiler_options</span><span class="p">,</span>
         <span class="p">)</span>
-
-    <span class="nd">@property</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">model_hash</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="c1"># Compute the hash with: model_config, continuous_batching, transforms</span>
-        <span class="n">mhash</span> <span class="o">=</span> <span class="n">hashlib</span><span class="o">.</span><span class="n">sha256</span><span class="p">()</span>
-        <span class="n">mhash</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">to_hashable</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">to_diff_dict</span><span class="p">()))</span>
-        <span class="n">mhash</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">to_hashable</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_transform_names</span><span class="p">()))</span>
-        <span class="n">mhash</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">to_hashable</span><span class="p">({</span><span class="s2">&quot;QEffCausalLMForTextImageToTextModel&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">}))</span>
-        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> <span class="s2">&quot;model&quot;</span><span class="p">):</span>
-            <span class="n">mhash</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">to_hashable</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">pretrained_model_name_or_path</span><span class="p">))</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">mhash</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">to_hashable</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">pretrained_model_name_or_path</span><span class="p">))</span>
-        <span class="n">mhash</span> <span class="o">=</span> <span class="n">mhash</span><span class="o">.</span><span class="n">hexdigest</span><span class="p">()[:</span><span class="mi">16</span><span class="p">]</span>
-        <span class="k">return</span> <span class="n">mhash</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">model_name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
@@ -701,9 +660,8 @@
             <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;Continuous batching is not supported for image-text-to-text models yet.&quot;</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">model</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">config</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">config</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">pretrained_model_name_or_path</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;pretrained_model_name_or_path&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">vision_model</span> <span class="o">=</span> <span class="n">QEffVisionEncoderForTextImageToTextModel</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">lang_model</span> <span class="o">=</span> <span class="n">QEffCausalLMForTextImageToTextModel</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">vision_model</span> <span class="o">=</span> <span class="n">QEffVisionEncoderForTextImageToTextModel</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lang_model</span> <span class="o">=</span> <span class="n">QEffCausalLMForTextImageToTextModel</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">input_shapes</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_names</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span>
 
     <span class="nd">@property</span>
@@ -746,14 +704,18 @@
         <span class="n">inputs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">get_dummy_inputs</span><span class="p">(</span><span class="n">kv_offload</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
         <span class="n">dynamic_axes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">get_onnx_dynamic_axes</span><span class="p">(</span><span class="n">kv_offload</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
         <span class="n">output_names</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">get_output_names</span><span class="p">(</span><span class="n">kv_offload</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
         <span class="bp">self</span><span class="o">.</span><span class="n">vision_model</span><span class="o">.</span><span class="n">export</span><span class="p">(</span>
             <span class="n">inputs</span><span class="p">[</span><span class="s2">&quot;vision&quot;</span><span class="p">],</span>
             <span class="n">output_names</span><span class="p">[</span><span class="s2">&quot;vision&quot;</span><span class="p">],</span>
             <span class="n">dynamic_axes</span><span class="p">[</span><span class="s2">&quot;vision&quot;</span><span class="p">],</span>
-            <span class="n">export_dir</span><span class="p">,</span>
+            <span class="n">export_dir</span><span class="o">=</span><span class="n">export_dir</span><span class="p">,</span>
+            <span class="n">offload_pt_weights</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lang_model</span><span class="o">.</span><span class="n">export</span><span class="p">(</span>
+            <span class="n">inputs</span><span class="p">[</span><span class="s2">&quot;lang&quot;</span><span class="p">],</span> <span class="n">output_names</span><span class="p">[</span><span class="s2">&quot;lang&quot;</span><span class="p">],</span> <span class="n">dynamic_axes</span><span class="p">[</span><span class="s2">&quot;lang&quot;</span><span class="p">],</span> <span class="n">export_dir</span><span class="o">=</span><span class="n">export_dir</span><span class="p">,</span> <span class="n">offload_pt_weights</span><span class="o">=</span><span class="kc">True</span>
         <span class="p">)</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">lang_model</span><span class="o">.</span><span class="n">export</span><span class="p">(</span><span class="n">inputs</span><span class="p">[</span><span class="s2">&quot;lang&quot;</span><span class="p">],</span> <span class="n">output_names</span><span class="p">[</span><span class="s2">&quot;lang&quot;</span><span class="p">],</span> <span class="n">dynamic_axes</span><span class="p">[</span><span class="s2">&quot;lang&quot;</span><span class="p">],</span> <span class="n">export_dir</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">onnx_path</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">compile</span><span class="p">(</span>
@@ -818,7 +780,7 @@
 
         <span class="k">if</span> <span class="ow">not</span> <span class="n">skip_vision</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">vision_model</span><span class="o">.</span><span class="n">_compile</span><span class="p">(</span>
-                <span class="n">compile_dir</span><span class="p">,</span>
+                <span class="n">compile_dir</span><span class="o">=</span><span class="n">compile_dir</span><span class="p">,</span>
                 <span class="n">compile_only</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
                 <span class="n">specializations</span><span class="o">=</span><span class="n">specializations</span><span class="p">[</span><span class="s2">&quot;vision&quot;</span><span class="p">],</span>
                 <span class="n">convert_to_fp16</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
@@ -845,7 +807,7 @@
                     <span class="n">custom_io_lang</span><span class="p">[</span><span class="n">output_name</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;float16&quot;</span> <span class="k">if</span> <span class="s2">&quot;vision_embeds&quot;</span> <span class="ow">in</span> <span class="n">output_name</span> <span class="k">else</span> <span class="n">kv_cache_dtype</span>
 
             <span class="bp">self</span><span class="o">.</span><span class="n">lang_model</span><span class="o">.</span><span class="n">_compile</span><span class="p">(</span>
-                <span class="n">compile_dir</span><span class="p">,</span>
+                <span class="n">compile_dir</span><span class="o">=</span><span class="n">compile_dir</span><span class="p">,</span>
                 <span class="n">compile_only</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
                 <span class="n">retained_state</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
                 <span class="n">specializations</span><span class="o">=</span><span class="n">specializations</span><span class="p">[</span><span class="s2">&quot;lang&quot;</span><span class="p">],</span>
@@ -937,7 +899,7 @@
             <span class="n">inputs</span><span class="p">[</span><span class="s2">&quot;input_ids&quot;</span><span class="p">],</span>
             <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">padded_len</span> <span class="o">-</span> <span class="n">input_ids_length</span><span class="p">),</span>
             <span class="s2">&quot;constant&quot;</span><span class="p">,</span>
-            <span class="mi">1</span><span class="p">,</span>
+            <span class="n">pad_token_id</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="n">inputs</span><span class="p">[</span><span class="s2">&quot;attention_mask&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">functional</span><span class="o">.</span><span class="n">pad</span><span class="p">(</span>
             <span class="n">inputs</span><span class="p">[</span><span class="s2">&quot;attention_mask&quot;</span><span class="p">],</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">padded_len</span> <span class="o">-</span> <span class="n">input_ids_length</span><span class="p">),</span> <span class="s2">&quot;constant&quot;</span><span class="p">,</span> <span class="mi">0</span>
@@ -977,10 +939,6 @@
         <span class="n">lang_session</span><span class="o">.</span><span class="n">activate</span><span class="p">()</span>
 
         <span class="n">lang_session</span><span class="o">.</span><span class="n">set_buffers</span><span class="p">(</span><span class="n">vision_outputs</span><span class="p">)</span>
-
-        <span class="c1"># Prepare inputs for prefill</span>
-        <span class="n">chunk_inputs</span> <span class="o">=</span> <span class="n">lang_inputs</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-        <span class="n">prefill_start</span> <span class="o">=</span> <span class="n">perf_counter</span><span class="p">()</span>
 
         <span class="c1"># Prepare inputs for prefill</span>
         <span class="n">chunk_inputs</span> <span class="o">=</span> <span class="n">lang_inputs</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
@@ -1066,7 +1024,7 @@
     <span class="p">):</span>
         <span class="k">if</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;full_batch_size&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">):</span>
             <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;Continuous batching is not supported for image-text-to-text models yet.&quot;</span><span class="p">)</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
         <span class="c1"># to handle internvl models</span>
         <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">config</span><span class="p">,</span> <span class="s2">&quot;llm_config&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">config</span><span class="p">,</span> <span class="s2">&quot;vision_config&quot;</span><span class="p">):</span>
@@ -1075,7 +1033,7 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">vision_config</span><span class="o">.</span><span class="n">use_flash_attn</span> <span class="o">=</span> <span class="s2">&quot;false&quot;</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">text_config</span><span class="o">.</span><span class="n">use_cache</span> <span class="o">=</span> <span class="kc">True</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">pretrained_model_name_or_path</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;pretrained_model_name_or_path&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">hash_params</span><span class="p">[</span><span class="s2">&quot;qeff_auto_class&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span>
 
     <span class="nd">@classmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">from_pretrained</span><span class="p">(</span>
@@ -1161,8 +1119,8 @@
                 <span class="n">custom_io</span><span class="p">[</span><span class="n">output_name</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;float16&quot;</span> <span class="k">if</span> <span class="s2">&quot;pixel_values&quot;</span> <span class="ow">in</span> <span class="n">output_name</span> <span class="k">else</span> <span class="n">kv_cache_dtype</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_compile</span><span class="p">(</span>
-            <span class="n">onnx_path</span><span class="p">,</span>
-            <span class="n">compile_dir</span><span class="p">,</span>
+            <span class="n">onnx_path</span><span class="o">=</span><span class="n">onnx_path</span><span class="p">,</span>
+            <span class="n">compile_dir</span><span class="o">=</span><span class="n">compile_dir</span><span class="p">,</span>
             <span class="n">compile_only</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
             <span class="n">retained_state</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
             <span class="n">specializations</span><span class="o">=</span><span class="n">specializations</span><span class="p">,</span>
@@ -1255,7 +1213,7 @@
             <span class="n">inputs</span><span class="p">[</span><span class="s2">&quot;input_ids&quot;</span><span class="p">],</span>
             <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">padded_len</span> <span class="o">-</span> <span class="n">input_ids_length</span><span class="p">),</span>
             <span class="s2">&quot;constant&quot;</span><span class="p">,</span>
-            <span class="mi">1</span><span class="p">,</span>
+            <span class="n">pad_token_id</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="n">inputs</span><span class="p">[</span><span class="s2">&quot;attention_mask&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">functional</span><span class="o">.</span><span class="n">pad</span><span class="p">(</span>
             <span class="n">inputs</span><span class="p">[</span><span class="s2">&quot;attention_mask&quot;</span><span class="p">],</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">padded_len</span> <span class="o">-</span> <span class="n">input_ids_length</span><span class="p">),</span> <span class="s2">&quot;constant&quot;</span><span class="p">,</span> <span class="mi">0</span>
@@ -1329,16 +1287,6 @@
         <span class="p">)</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">model_hash</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="n">mhash</span> <span class="o">=</span> <span class="n">hashlib</span><span class="o">.</span><span class="n">sha256</span><span class="p">()</span>
-        <span class="n">mhash</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">to_hashable</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">to_diff_dict</span><span class="p">()))</span>
-        <span class="n">mhash</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">to_hashable</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_transform_names</span><span class="p">()))</span>
-        <span class="n">mhash</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">to_hashable</span><span class="p">({</span><span class="s2">&quot;QEFFAutoModelForImageTextToText1QPC&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">}))</span>
-        <span class="n">mhash</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">to_hashable</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pretrained_model_name_or_path</span><span class="p">))</span>
-        <span class="n">mhash</span> <span class="o">=</span> <span class="n">mhash</span><span class="o">.</span><span class="n">hexdigest</span><span class="p">()[:</span><span class="mi">16</span><span class="p">]</span>
-        <span class="k">return</span> <span class="n">mhash</span>
-
-    <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">model_name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
         <span class="n">mname</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span>
         <span class="k">if</span> <span class="n">mname</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;QEff&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">mname</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;QEFF&quot;</span><span class="p">):</span>
@@ -1350,7 +1298,7 @@
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="vm">__dict__</span>
 
 
-<div class="viewcode-block" id="QEFFAutoModelForImageTextToText"><a class="viewcode-back" href="../../../../source/python_api.html#QEfficient.transformers.models.modeling_auto.QEFFAutoModelForImageTextToText">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">QEFFAutoModelForImageTextToText</span><span class="p">:</span>
+<div class="viewcode-block" id="QEFFAutoModelForImageTextToText"><a class="viewcode-back" href="../../../../source/autoclass.html#QEfficient.transformers.models.modeling_auto.QEFFAutoModelForImageTextToText">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">QEFFAutoModelForImageTextToText</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    The QEFFAutoModelForImageTextToText class is used to work with multimodal language models from the HuggingFace hub.</span>
 <span class="sd">    While you can initialize the class directly, it&#39;s best to use the ``from_pretrained`` method for this purpose. This class supports both single and dual QPC approaches.</span>
@@ -1456,7 +1404,7 @@
 <span class="n">MISCLASSIFIED_CAUSAL_LM_TO_QEFF_AUTO_CLASS_MAP</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;InternVLChatModel&quot;</span><span class="p">:</span> <span class="n">QEFFAutoModelForImageTextToText</span><span class="p">}</span>
 
 
-<div class="viewcode-block" id="QEFFAutoModelForCausalLM"><a class="viewcode-back" href="../../../../source/python_api.html#QEfficient.transformers.models.modeling_auto.QEFFAutoModelForCausalLM">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">QEFFAutoModelForCausalLM</span><span class="p">(</span><span class="n">QEFFBaseModel</span><span class="p">):</span>
+<div class="viewcode-block" id="QEFFAutoModelForCausalLM"><a class="viewcode-back" href="../../../../source/autoclass.html#QEfficient.transformers.models.modeling_auto.QEFFAutoModelForCausalLM">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">QEFFAutoModelForCausalLM</span><span class="p">(</span><span class="n">QEFFBaseModel</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    The QEFF class is designed for manipulating any causal language model from the HuggingFace hub.</span>
 <span class="sd">    Although it is possible to initialize the class directly, we highly recommend using the ``from_pretrained`` method for initialization.</span>
@@ -1524,16 +1472,16 @@
             <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
                 <span class="s2">&quot;Please use `from_pretrained` method to load quantized models, might give unexpected results&quot;</span>
             <span class="p">)</span>
-
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
         <span class="c1"># Set use_cache=True to get KV values as output during ONNX export</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">use_cache</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="n">model</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">use_cache</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">num_layers</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">num_hidden_layers</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">continuous_batching</span> <span class="o">=</span> <span class="n">continuous_batching</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">qaic_config</span> <span class="o">=</span> <span class="n">qaic_config</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">pretrained_model_name_or_path</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;pretrained_model_name_or_path&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> <span class="n">transformed</span> <span class="o">=</span> <span class="n">SpDTransform</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> <span class="n">qaic_config</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">is_tlm</span> <span class="o">=</span> <span class="n">transformed</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">hash_params</span><span class="p">[</span><span class="s2">&quot;qeff_auto_class&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span>
 
         <span class="c1"># ---Sampling---</span>
         <span class="c1"># Note: SamplerTransform should be applied after all other transforms</span>
@@ -1622,7 +1570,7 @@
 
         <span class="k">if</span> <span class="n">model</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span> <span class="ow">in</span> <span class="n">MISCLASSIFIED_CAUSAL_LM_TO_QEFF_AUTO_CLASS_MAP</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">MISCLASSIFIED_CAUSAL_LM_TO_QEFF_AUTO_CLASS_MAP</span><span class="p">[</span><span class="n">model</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">](</span>
-                <span class="n">model</span><span class="p">,</span> <span class="n">kv_offload</span><span class="o">=</span><span class="n">kv_offload</span>
+                <span class="n">model</span><span class="p">,</span> <span class="n">kv_offload</span><span class="o">=</span><span class="n">kv_offload</span><span class="p">,</span> <span class="n">pretrained_model_name_or_path</span><span class="o">=</span><span class="n">pretrained_model_name_or_path</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
             <span class="p">)</span>
         <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
             <span class="n">model</span><span class="p">,</span>
@@ -1633,23 +1581,10 @@
         <span class="p">)</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">model_hash</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="c1"># Compute the hash with: model_config, continuous_batching, transforms</span>
-        <span class="n">mhash</span> <span class="o">=</span> <span class="n">hashlib</span><span class="o">.</span><span class="n">sha256</span><span class="p">()</span>
-        <span class="n">mhash</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">to_hashable</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">to_diff_dict</span><span class="p">()))</span>
-        <span class="n">mhash</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">to_hashable</span><span class="p">({</span><span class="s2">&quot;continuous_batching&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">continuous_batching</span><span class="p">}))</span>
-        <span class="n">mhash</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">to_hashable</span><span class="p">({</span><span class="s2">&quot;is_tlm&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_tlm</span><span class="p">}))</span>
-        <span class="n">mhash</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">to_hashable</span><span class="p">({</span><span class="s2">&quot;qaic_config&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">qaic_config</span><span class="p">}))</span>
-        <span class="n">mhash</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">to_hashable</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_transform_names</span><span class="p">()))</span>
-        <span class="n">mhash</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">to_hashable</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pretrained_model_name_or_path</span><span class="p">))</span>
-        <span class="n">mhash</span> <span class="o">=</span> <span class="n">mhash</span><span class="o">.</span><span class="n">hexdigest</span><span class="p">()[:</span><span class="mi">16</span><span class="p">]</span>
-        <span class="k">return</span> <span class="n">mhash</span>
-
-    <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">get_model_config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="vm">__dict__</span>
 
-<div class="viewcode-block" id="QEFFAutoModelForCausalLM.export"><a class="viewcode-back" href="../../../../source/python_api.html#QEfficient.transformers.models.modeling_auto.QEFFAutoModelForCausalLM.export">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">export</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">export_dir</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<div class="viewcode-block" id="QEFFAutoModelForCausalLM.export"><a class="viewcode-back" href="../../../../source/autoclass.html#QEfficient.transformers.models.modeling_auto.QEFFAutoModelForCausalLM.export">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">export</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">export_dir</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Exports the model to ``ONNX`` format using ``torch.onnx.export``.</span>
 
@@ -1736,7 +1671,7 @@
             <span class="n">export_dir</span><span class="o">=</span><span class="n">export_dir</span><span class="p">,</span>
         <span class="p">)</span></div>
 
-<div class="viewcode-block" id="QEFFAutoModelForCausalLM.get_sampling_inputs_and_outputs"><a class="viewcode-back" href="../../../../source/python_api.html#QEfficient.transformers.models.modeling_auto.QEFFAutoModelForCausalLM.get_sampling_inputs_and_outputs">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">get_sampling_inputs_and_outputs</span><span class="p">(</span>
+<div class="viewcode-block" id="QEFFAutoModelForCausalLM.get_sampling_inputs_and_outputs"><a class="viewcode-back" href="../../../../source/autoclass.html#QEfficient.transformers.models.modeling_auto.QEFFAutoModelForCausalLM.get_sampling_inputs_and_outputs">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">get_sampling_inputs_and_outputs</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">example_inputs</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">],</span>
         <span class="n">output_names</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
@@ -1846,7 +1781,7 @@
             <span class="n">spec</span><span class="p">[</span><span class="s2">&quot;batch_size&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">kv_cache_batch_size</span>
         <span class="k">return</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">spec</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">v</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">}</span>
 
-<div class="viewcode-block" id="QEFFAutoModelForCausalLM.compile"><a class="viewcode-back" href="../../../../source/python_api.html#QEfficient.transformers.models.modeling_auto.QEFFAutoModelForCausalLM.compile">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">compile</span><span class="p">(</span>
+<div class="viewcode-block" id="QEFFAutoModelForCausalLM.compile"><a class="viewcode-back" href="../../../../source/autoclass.html#QEfficient.transformers.models.modeling_auto.QEFFAutoModelForCausalLM.compile">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">compile</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">onnx_path</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">compile_dir</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -1976,7 +1911,7 @@
         <span class="k">return</span> <span class="n">qpc_path</span></div>
 
     <span class="c1"># FIXME: Update this method to match with transformers AutoModelForCausalLM.generate</span>
-<div class="viewcode-block" id="QEFFAutoModelForCausalLM.generate"><a class="viewcode-back" href="../../../../source/python_api.html#QEfficient.transformers.models.modeling_auto.QEFFAutoModelForCausalLM.generate">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">generate</span><span class="p">(</span>
+<div class="viewcode-block" id="QEFFAutoModelForCausalLM.generate"><a class="viewcode-back" href="../../../../source/autoclass.html#QEfficient.transformers.models.modeling_auto.QEFFAutoModelForCausalLM.generate">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">generate</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">tokenizer</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">PreTrainedTokenizerFast</span><span class="p">,</span> <span class="n">PreTrainedTokenizer</span><span class="p">],</span>
         <span class="n">prompts</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
@@ -2037,7 +1972,7 @@
         <span class="k">return</span> <span class="n">num_speculative_tokens</span></div>
 
 
-<div class="viewcode-block" id="QEFFAutoModelForSpeechSeq2Seq"><a class="viewcode-back" href="../../../../source/python_api.html#QEfficient.transformers.models.modeling_auto.QEFFAutoModelForSpeechSeq2Seq">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">QEFFAutoModelForSpeechSeq2Seq</span><span class="p">(</span><span class="n">QEFFTransformersBase</span><span class="p">,</span> <span class="n">MultimodalUtilityMixin</span><span class="p">):</span>
+<div class="viewcode-block" id="QEFFAutoModelForSpeechSeq2Seq"><a class="viewcode-back" href="../../../../source/autoclass.html#QEfficient.transformers.models.modeling_auto.QEFFAutoModelForSpeechSeq2Seq">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">QEFFAutoModelForSpeechSeq2Seq</span><span class="p">(</span><span class="n">QEFFTransformersBase</span><span class="p">,</span> <span class="n">MultimodalUtilityMixin</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    The QEFFAutoModelForSpeechSeq2Seq class is designed for transformers models with a sequence-to-sequence speech-to-text modeling head, including Whisper and other Encoder-Decoder speech models.</span>
 <span class="sd">    Although it is possible to initialize the class directly, we highly recommend using the ``from_pretrained`` method for initialization.</span>
@@ -2085,32 +2020,16 @@
         <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">model_class_name</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;ForConditionalGeneration&quot;</span><span class="p">)):</span>
             <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Required pytorch module with ForConditionalGeneration, got </span><span class="si">{</span><span class="n">model_class_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">use_cache</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="n">model</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">use_cache</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">num_layers</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">num_hidden_layers</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">pretrained_model_name_or_path</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;pretrained_model_name_or_path&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
-
-    <span class="nd">@property</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">model_hash</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="c1"># NOTE: model_config.to_diff_dict() has &quot;_name_or_path&quot; attribute which is the model card name or path.</span>
-        <span class="c1"># Using same card name will result in same hash. But, using a relative path for one run and</span>
-        <span class="c1"># absolute path for another run will result in different hash.</span>
-        <span class="c1"># The added complexity to resolve different paths to same location is not worth pursuing.</span>
-        <span class="c1"># Instead, advise the user to always provide same relative paths or absolute paths for local models.</span>
-
-        <span class="c1"># Compute the hash with: model_config, transforms</span>
-        <span class="n">mhash</span> <span class="o">=</span> <span class="n">hashlib</span><span class="o">.</span><span class="n">sha256</span><span class="p">()</span>
-        <span class="n">mhash</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">to_hashable</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">to_diff_dict</span><span class="p">()))</span>
-        <span class="n">mhash</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">to_hashable</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_transform_names</span><span class="p">()))</span>
-        <span class="n">mhash</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">to_hashable</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pretrained_model_name_or_path</span><span class="p">))</span>
-        <span class="n">mhash</span> <span class="o">=</span> <span class="n">mhash</span><span class="o">.</span><span class="n">hexdigest</span><span class="p">()[:</span><span class="mi">16</span><span class="p">]</span>
-        <span class="k">return</span> <span class="n">mhash</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">hash_params</span><span class="p">[</span><span class="s2">&quot;qeff_auto_class&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">get_model_config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="vm">__dict__</span>
 
-<div class="viewcode-block" id="QEFFAutoModelForSpeechSeq2Seq.export"><a class="viewcode-back" href="../../../../source/python_api.html#QEfficient.transformers.models.modeling_auto.QEFFAutoModelForSpeechSeq2Seq.export">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">export</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">export_dir</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<div class="viewcode-block" id="QEFFAutoModelForSpeechSeq2Seq.export"><a class="viewcode-back" href="../../../../source/autoclass.html#QEfficient.transformers.models.modeling_auto.QEFFAutoModelForSpeechSeq2Seq.export">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">export</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">export_dir</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Exports the model to ``ONNX`` format using ``torch.onnx.export``.</span>
 
@@ -2125,7 +2044,7 @@
         <span class="n">output_names</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">get_output_names</span><span class="p">()</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_export</span><span class="p">(</span><span class="n">inputs</span><span class="p">,</span> <span class="n">output_names</span><span class="p">,</span> <span class="n">dynamic_axes</span><span class="p">,</span> <span class="n">export_dir</span><span class="o">=</span><span class="n">export_dir</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="QEFFAutoModelForSpeechSeq2Seq.compile"><a class="viewcode-back" href="../../../../source/python_api.html#QEfficient.transformers.models.modeling_auto.QEFFAutoModelForSpeechSeq2Seq.compile">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">compile</span><span class="p">(</span>
+<div class="viewcode-block" id="QEFFAutoModelForSpeechSeq2Seq.compile"><a class="viewcode-back" href="../../../../source/autoclass.html#QEfficient.transformers.models.modeling_auto.QEFFAutoModelForSpeechSeq2Seq.compile">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">compile</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">onnx_path</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">compile_dir</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -2200,8 +2119,8 @@
                 <span class="n">custom_io</span><span class="p">[</span><span class="n">output_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">kv_cache_dtype</span>
 
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_compile</span><span class="p">(</span>
-            <span class="n">onnx_path</span><span class="p">,</span>
-            <span class="n">compile_dir</span><span class="p">,</span>
+            <span class="n">onnx_path</span><span class="o">=</span><span class="n">onnx_path</span><span class="p">,</span>
+            <span class="n">compile_dir</span><span class="o">=</span><span class="n">compile_dir</span><span class="p">,</span>
             <span class="n">compile_only</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
             <span class="n">retained_state</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
             <span class="n">specializations</span><span class="o">=</span><span class="n">specializations</span><span class="p">,</span>
@@ -2213,7 +2132,7 @@
             <span class="o">**</span><span class="n">compiler_options</span><span class="p">,</span>
         <span class="p">)</span></div>
 
-<div class="viewcode-block" id="QEFFAutoModelForSpeechSeq2Seq.generate"><a class="viewcode-back" href="../../../../source/python_api.html#QEfficient.transformers.models.modeling_auto.QEFFAutoModelForSpeechSeq2Seq.generate">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">generate</span><span class="p">(</span>
+<div class="viewcode-block" id="QEFFAutoModelForSpeechSeq2Seq.generate"><a class="viewcode-back" href="../../../../source/autoclass.html#QEfficient.transformers.models.modeling_auto.QEFFAutoModelForSpeechSeq2Seq.generate">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">generate</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">inputs</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span>
         <span class="n">generation_len</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
@@ -2309,7 +2228,7 @@
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright 2024, Qualcomm.</p>
+    <p>&#169; Copyright 2025, Qualcomm.</p>
   </div>
 
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a

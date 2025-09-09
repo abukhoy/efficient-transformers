@@ -74,6 +74,7 @@
 <p class="caption" role="heading"><span class="caption-text">Inference on Cloud AI 100</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="quick_start.html">Quick Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="autoclass.html">Auto Class</a></li>
 <li class="toctree-l1"><a class="reference internal" href="cli_api.html">Command Line Interface Use (CLI)</a></li>
 <li class="toctree-l1"><a class="reference internal" href="python_api.html">Python API</a></li>
 </ul>
@@ -137,6 +138,7 @@
 <li><p>Text &amp; Image+Text support</p></li>
 <li><p>Chunk attention, Single/Dual QPC support</p></li>
 <li><p>Multi-image prompts enabled via VLLM interface</p></li>
+<li><p><a class="reference external" href="https://github.com/quic/efficient-transformers/blob/main/examples/llama4_example.py">Llama4 Example Script</a></p></li>
 </ul>
 </li>
 <li><p><strong>Grok-1</strong></p>
@@ -148,21 +150,19 @@
 <ul>
 <li><p>Text &amp; Image+Text support</p></li>
 <li><p>Sliding window support</p></li>
-</ul>
-</li>
-<li><p><strong>Granite Vision &amp; MOE Models</strong></p>
-<ul>
-<li><p>Sample scripts available</p></li>
+<li><p><a class="reference external" href="https://github.com/quic/efficient-transformers/blob/main/examples/gemma3_example/gemma3_mm.py">Gemma3 Example Script</a></p></li>
 </ul>
 </li>
 <li><p><strong>SwiftKV (Llama-3.1-SwiftKV-8B-Instruct)</strong></p>
 <ul>
 <li><p>Supports both continuous and non-continuous batching</p></li>
+<li><p>Executable via <code class="docutils literal notranslate"><span class="pre">QEffAutoModelForCausalLM</span></code></p></li>
 </ul>
 </li>
 <li><p><strong>GGUF Models</strong></p>
 <ul>
 <li><p>Execution support (non-quantized)</p></li>
+<li><p><a class="reference external" href="https://github.com/quic/efficient-transformers/blob/main/examples/basic_gguf_models.py">Example Script</a></p></li>
 </ul>
 </li>
 <li><p><strong>FP8 Compressed Quantization</strong></p>
@@ -180,7 +180,7 @@
 <li><p><strong>SpD &amp; Multi-Projection Heads</strong>: Token speculation via post-attention projections</p></li>
 <li><p><strong>I/O Encryption</strong>: <code class="docutils literal notranslate"><span class="pre">--io-encrypt</span></code> flag support in compile/infer APIs</p></li>
 <li><p><strong>Separate Prefill/Decode Compilation</strong>: For disaggregated serving</p></li>
-<li><p><strong>On-Device Sampling</strong>: Reduces host-device latency for CausalLM models</p></li>
+<li><p><strong>On-Device Sampling</strong>: Supported using VLLM, which reduces host-device latency for CausalLM models</p></li>
 </ul>
 </section>
 <hr class="docutils" />
@@ -200,7 +200,6 @@
 <li><p>Gradient checkpointing, device-aware <code class="docutils literal notranslate"><span class="pre">GradScaler</span></code>, and CLI <code class="docutils literal notranslate"><span class="pre">--help</span></code> added</p></li>
 </ul>
 <hr class="docutils" />
-<p>Thank you for using Efficient Transformers! For more details, refer to the full documentation.</p>
 </section>
 </section>
 
@@ -215,7 +214,7 @@
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright 2024, Qualcomm.</p>
+    <p>&#169; Copyright 2025, Qualcomm.</p>
   </div>
 
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
@@ -238,8 +237,6 @@
       <dl>
         <dd><a href="../index.html">main</a></dd>
         <dd><a href="release/v1.18/index.html">release/v1.18</a></dd>
-        <dd><a href="release/v1.19/index.html">release/v1.19</a></dd>
-        <dd><a href="release/v1.20/index.html">release/v1.20(beta)</a></dd>
       </dl>
     </div>
 </div><script>
