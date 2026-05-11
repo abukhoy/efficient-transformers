@@ -406,6 +406,14 @@ class QEffGPT2LMHeadModel(GPT2LMHeadModel):
         """
         return {QEffGPT2Block}
 
+    def get_benchmark_modules(self):
+        """Return GPT-2 internal modules to export as standalone benchmark graphs."""
+        modules = []
+        for layer_idx, block in enumerate(self.transformer.h):
+            modules.append({"name": f"transformer.h.{layer_idx}.attn", "type": "attention", "module": block.attn})
+            modules.append({"name": f"transformer.h.{layer_idx}.mlp", "type": "mlp", "module": block.mlp})
+        return modules
+
     def forward(
         self,
         input_ids: Optional[torch.LongTensor] = None,

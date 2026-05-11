@@ -292,6 +292,10 @@ class QEFFBaseModel(ABC):
         # Return early if ONNX already exists
         if onnx_path.is_file():
             self.onnx_path = onnx_path
+            if getattr(self, "enable_benchmark", False):
+                from QEfficient.utils.benchmark_export import export_benchmark_modules
+
+                export_benchmark_modules(self, export_dir, example_inputs=example_inputs)
             return onnx_path
 
         # check if the model is in meta state or weights are offloaded
@@ -347,6 +351,10 @@ class QEFFBaseModel(ABC):
                 **export_kwargs,
             )
             logger.info("PyTorch export successful")
+            if getattr(self, "enable_benchmark", False):
+                from QEfficient.utils.benchmark_export import export_benchmark_modules
+
+                export_benchmark_modules(self, export_dir, example_inputs=example_inputs)
             _ = self._offload_model_weights(offload_pt_weights)
             model = onnx.load(onnx_path, load_external_data=False)
 

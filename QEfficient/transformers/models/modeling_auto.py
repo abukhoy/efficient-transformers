@@ -2799,6 +2799,7 @@ class QEFFAutoModelForCausalLM(QEFFBaseModel):
         continuous_batching: bool = False,
         qaic_config: Optional[dict] = None,
         max_seq_len_cached: Optional[int] = None,
+        enable_benchmark: bool = False,
         **kwargs,
     ):
         """
@@ -2851,6 +2852,7 @@ class QEFFAutoModelForCausalLM(QEFFBaseModel):
 
         setattr(model.config, "max_seq_len_cached", max_seq_len_cached)
         super().__init__(model, qaic_config=qaic_config, **kwargs)
+        self.enable_benchmark = enable_benchmark
         self.num_layers = model.config.num_hidden_layers
         self.continuous_batching = continuous_batching
         self.model.qaic_config = qaic_config
@@ -2935,6 +2937,7 @@ class QEFFAutoModelForCausalLM(QEFFBaseModel):
             An instance initialized with the pretrained weights.
         """
         enable_proxy = kwargs.pop("enable_proxy", False)
+        enable_benchmark = kwargs.pop("enable_benchmark", False)
         if kwargs.pop("full_batch_size", None):
             continuous_batching = True
             warnings.warn(
@@ -2963,6 +2966,7 @@ class QEFFAutoModelForCausalLM(QEFFBaseModel):
                 pretrained_model_name_or_path=pretrained_model_name_or_path,
                 qaic_config=qaic_config,
                 continuous_batching=continuous_batching,
+                enable_benchmark=enable_benchmark,
                 **kwargs,
             )
         return cls(
@@ -2971,6 +2975,7 @@ class QEFFAutoModelForCausalLM(QEFFBaseModel):
             qaic_config=qaic_config,
             pretrained_model_name_or_path=pretrained_model_name_or_path,
             max_seq_len_cached=max_seq_len_cached,
+            enable_benchmark=enable_benchmark,
             **kwargs,
         )
 

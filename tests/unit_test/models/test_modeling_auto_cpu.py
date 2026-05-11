@@ -261,6 +261,18 @@ class TestQEFFAutoModelForCausalLMLogic:
         qeff = QEFFAutoModelForCausalLM(model, continuous_batching=True)
         assert qeff.continuous_batching is True
 
+    def test_enable_benchmark_default_false(self):
+        """enable_benchmark defaults to False."""
+        model, cfg = make_tiny_gpt2()
+        qeff = QEFFAutoModelForCausalLM(model)
+        assert qeff.enable_benchmark is False
+
+    def test_enable_benchmark_true_when_set(self):
+        """enable_benchmark=True is stored correctly."""
+        model, cfg = make_tiny_gpt2()
+        qeff = QEFFAutoModelForCausalLM(model, enable_benchmark=True)
+        assert qeff.enable_benchmark is True
+
     def test_is_tlm_false_by_default(self):
         """is_tlm is False when no qaic_config specifies speculative model."""
         model, cfg = make_tiny_gpt2()
@@ -480,6 +492,53 @@ class TestQEFFAutoModelForCausalLMCompileValidation:
         tokenizer = MagicMock()
         with pytest.raises(NotImplementedError):
             qeff.generate(tokenizer=tokenizer, prompts=["Hello"], runtime_ai100=False)
+
+
+@pytest.mark.onnx
+@pytest.mark.slow
+class TestQEFFAutoModelForCausalLMBenchmarkExport:
+    """Tests for enable_benchmark sidecar module export."""
+
+    def test_benchmark_export_creates_attention_and_mlp_sidecars(self, tmp_export_dir):
+        """enable_benchmark exports standalone attention/MLP ONNX files and IO dirs."""
+        import json
+        from pathlib import Path
+
+        import onnx
+
+        model, cfg = make_tiny_gpt2()
+        qeff = QEFFAutoModelForCausalLM(model, enable_benchmark=True)
+
+        onnx_path = Path(qeff.export(export_dir=str(tmp_export_dir), offload_pt_weights=False))
+        benchmark_dir = onnx_path.parent / "benchmark_modules"
+        manifest_path = benchmark_dir / "manifest.json"
+
+        assert manifest_path.is_file()
+        manifest = json.loads(manifest_path.read_text())
+        module_types = {module["type"] for module in manifest["modules"]}
+        assert {"attention", "mlp"}.issubset(module_types)
+
+        first_attention = next(module for module in manifest["modules"] if module["type"] == "attention")
+        first_mlp = next(module for module in manifest["modules"] if module["type"] == "mlp")
+        for module in (first_attention, first_mlp):
+            module_onnx_path = Path(module["onnx_path"])
+            io_json_path = Path(module["io_json_path"])
+            assert module_onnx_path.is_file()
+            assert io_json_path.is_file()
+            assert (io_json_path.parent / "prefill" / "hidden_states.raw").is_file()
+            assert (io_json_path.parent / "decode" / "hidden_states.raw").is_file()
+            onnx.load(module_onnx_path, load_external_data=False)
+
+    def test_benchmark_export_default_off(self, tmp_export_dir):
+        """Default export does not create benchmark module sidecars."""
+        from pathlib import Path
+
+        model, cfg = make_tiny_gpt2()
+        qeff = QEFFAutoModelForCausalLM(model)
+
+        onnx_path = Path(qeff.export(export_dir=str(tmp_export_dir), offload_pt_weights=False))
+
+        assert not (onnx_path.parent / "benchmark_modules").exists()
 
 
 # ---------------------------------------------------------------------------
