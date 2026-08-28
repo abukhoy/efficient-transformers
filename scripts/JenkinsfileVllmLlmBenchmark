@@ -55,8 +55,9 @@ pipeline {
         string(name: 'PYTHON_BIN', defaultValue: 'python3.12', description: 'Python used to create the benchmark venv')
         string(name: 'VLLM_QAIC_REPO', defaultValue: 'https://github.com/qualcomm/vllm-qaic.git', description: 'vllm-qaic git clone URL')
         string(name: 'VLLM_QAIC_BRANCH', defaultValue: 'main', description: 'vllm-qaic branch/tag to install')
-        string(name: 'QAIC_DISAGG_REPO', defaultValue: 'https://review.qualcomm.com/qranium/qaic-disagg', description: 'qaic-disagg git clone URL')
+        string(name: 'QAIC_DISAGG_REPO', defaultValue: 'ssh://review.qualcomm.com:29418/qranium/qaic-disagg', description: 'qaic-disagg Gerrit SSH clone URL (internal repo, requires GERRIT_SSH_CREDENTIALS_ID)')
         string(name: 'QAIC_DISAGG_BRANCH', defaultValue: 'main', description: 'qaic-disagg branch/tag to install')
+        string(name: 'GERRIT_SSH_CREDENTIALS_ID', defaultValue: '', description: 'Jenkins "SSH Username with private key" credential ID for Gerrit (review.qualcomm.com) access to clone qaic-disagg. Required unless SKIP_INSTALL=true.')
         string(name: 'QEFF_BRANCH', defaultValue: 'main', description: 'efficient-transformers branch consumed by vllm-qaic scripts/install.sh aot')
         password(name: 'HF_TOKEN', defaultValue: '', description: 'HuggingFace token for gated models')
         string(name: 'QSERVE_BENCHMARK_SCRIPT', defaultValue: '', description: 'Optional benchmark_serving.py path. Empty uses auto/fallback.')
@@ -123,46 +124,60 @@ pipeline {
 
         stage('Prepare Environment') {
             steps {
-                sh '''#!/bin/bash
-                    set -euo pipefail
-                    mkdir -p "${BENCH_ROOT}" "${VLLM_LLM_RESULTS_DIR}" "${QEFF_HOME}" "${HF_HOME}" "${TMPDIR}"
+                script {
+                    def prepareSh = {
+                        sh '''#!/bin/bash
+                            set -euo pipefail
+                            mkdir -p "${BENCH_ROOT}" "${VLLM_LLM_RESULTS_DIR}" "${QEFF_HOME}" "${HF_HOME}" "${TMPDIR}"
 
-                    if [[ ! -d "${VENV_DIR}" ]]; then
-                        "${PYTHON_BIN}" -m venv "${VENV_DIR}"
-                    fi
-                    . "${VENV_DIR}/bin/activate"
-                    python -m pip install --upgrade pip setuptools wheel
+                            if [[ ! -d "${VENV_DIR}" ]]; then
+                                "${PYTHON_BIN}" -m venv "${VENV_DIR}"
+                            fi
+                            . "${VENV_DIR}/bin/activate"
+                            python -m pip install --upgrade pip setuptools wheel
 
-                    if [[ "${SKIP_INSTALL}" == "true" ]]; then
-                        echo "SKIP_INSTALL=true; reusing existing venv and repo checkouts."
-                        python "${BENCHMARK_SCRIPT}" --help >/dev/null
-                        exit 0
-                    fi
+                            if [[ "${SKIP_INSTALL}" == "true" ]]; then
+                                echo "SKIP_INSTALL=true; reusing existing venv and repo checkouts."
+                                python "${BENCHMARK_SCRIPT}" --help >/dev/null
+                                exit 0
+                            fi
 
-                    clone_or_update() {
-                        local repo="$1"
-                        local dest="$2"
-                        local branch="$3"
-                        if [[ -d "${dest}/.git" ]]; then
-                            git -C "${dest}" fetch --all --tags
-                            git -C "${dest}" checkout "${branch}"
-                            git -C "${dest}" pull --ff-only origin "${branch}" || true
-                        else
-                            git clone --branch "${branch}" "${repo}" "${dest}"
-                        fi
+                            clone_or_update() {
+                                local repo="$1"
+                                local dest="$2"
+                                local branch="$3"
+                                if [[ -d "${dest}/.git" ]]; then
+                                    git -C "${dest}" fetch --all --tags
+                                    git -C "${dest}" checkout "${branch}"
+                                    git -C "${dest}" pull --ff-only origin "${branch}" || true
+                                else
+                                    git clone --branch "${branch}" "${repo}" "${dest}"
+                                fi
+                            }
+
+                            clone_or_update "${VLLM_QAIC_REPO}" "${VLLM_QAIC_DIR}" "${VLLM_QAIC_BRANCH}"
+                            (
+                                cd "${VLLM_QAIC_DIR}"
+                                QEFF_BRANCH="${QEFF_BRANCH}" scripts/install.sh aot
+                            )
+
+                            mkdir -p "${HOME}/.ssh"
+                            ssh-keyscan -p 29418 -H review.qualcomm.com >> "${HOME}/.ssh/known_hosts" 2>/dev/null || true
+                            clone_or_update "${QAIC_DISAGG_REPO}" "${QAIC_DISAGG_DIR}" "${QAIC_DISAGG_BRANCH}"
+                            python -m pip install -e "${QAIC_DISAGG_DIR}"
+
+                            python "${BENCHMARK_SCRIPT}" --help >/dev/null
+                        '''
                     }
 
-                    clone_or_update "${VLLM_QAIC_REPO}" "${VLLM_QAIC_DIR}" "${VLLM_QAIC_BRANCH}"
-                    (
-                        cd "${VLLM_QAIC_DIR}"
-                        QEFF_BRANCH="${QEFF_BRANCH}" scripts/install.sh aot
-                    )
-
-                    clone_or_update "${QAIC_DISAGG_REPO}" "${QAIC_DISAGG_DIR}" "${QAIC_DISAGG_BRANCH}"
-                    python -m pip install -e "${QAIC_DISAGG_DIR}"
-
-                    python "${BENCHMARK_SCRIPT}" --help >/dev/null
-                '''
+                    if (!params.SKIP_INSTALL && params.GERRIT_SSH_CREDENTIALS_ID?.trim()) {
+                        sshagent(credentials: [params.GERRIT_SSH_CREDENTIALS_ID]) {
+                            prepareSh()
+                        }
+                    } else {
+                        prepareSh()
+                    }
+                }
             }
         }
 
