@@ -86,6 +86,15 @@ pipeline {
         HF_TOKEN = "${params.HF_TOKEN}"
         HF_HUB_ENABLE_HF_TRANSFER = '1'
         TMPDIR = "/tmp/vllm_llm_${BUILD_NUMBER}"
+        PYTHON_BIN = "${params.PYTHON_BIN}"
+        VLLM_QAIC_REPO = "${params.VLLM_QAIC_REPO}"
+        VLLM_QAIC_BRANCH = "${params.VLLM_QAIC_BRANCH}"
+        QAIC_DISAGG_REPO = "${params.QAIC_DISAGG_REPO}"
+        QAIC_DISAGG_BRANCH = "${params.QAIC_DISAGG_BRANCH}"
+        QEFF_BRANCH = "${params.QEFF_BRANCH}"
+        SKIP_INSTALL = "${params.SKIP_INSTALL}"
+        SERVER_READY_TIMEOUT_MINUTES = "${params.SERVER_READY_TIMEOUT_MINUTES}"
+        QSERVE_BENCHMARK_SCRIPT = "${params.QSERVE_BENCHMARK_SCRIPT}"
     }
 
     stages {
