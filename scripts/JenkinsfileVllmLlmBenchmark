@@ -1,0 +1,205 @@
+def configCsv(String configName) {
+    return "tests/nightly_pipeline/vllm_llm_benchmark/configs/llm_${configName}_configs.csv"
+}
+
+def runLlmConfig(String configName, String rowSpec) {
+    def dryRunArg = params.DRY_RUN ? '--dry-run' : ''
+    def failFastArg = params.FAIL_FAST ? '--fail-fast' : ''
+    def outputCsv = "${env.VLLM_LLM_RESULTS_DIR}/llm_${configName}_results.csv"
+
+    catchError(buildResult: 'FAILURE', stageResult: 'FAILURE') {
+        withEnv([
+            "CONFIG_NAME=${configName}",
+            "INPUT_CSV=${configCsv(configName)}",
+            "OUTPUT_CSV=${outputCsv}",
+            "ROWS_TO_RUN=${rowSpec ?: 'ALL'}",
+            "DRY_RUN_ARG=${dryRunArg}",
+            "FAIL_FAST_ARG=${failFastArg}",
+        ]) {
+            sh '''#!/bin/bash
+                set -euo pipefail
+                . "${VENV_DIR}/bin/activate"
+                export PYTHONUNBUFFERED=1
+                export TOKENIZERS_PARALLELISM=false
+
+                python "${BENCHMARK_SCRIPT}" \
+                    --config-name "${CONFIG_NAME}" \
+                    --input-csv "${INPUT_CSV}" \
+                    --output-csv "${OUTPUT_CSV}" \
+                    --rows "${ROWS_TO_RUN}" \
+                    --results-dir "${VLLM_LLM_RESULTS_DIR}" \
+                    --base-dir "${BENCH_ROOT}" \
+                    --python-bin python \
+                    --qserve-benchmark-script "${QSERVE_BENCHMARK_SCRIPT:-}" \
+                    --vllm-qaic-dir "${VLLM_QAIC_DIR}" \
+                    --server-ready-timeout-s "$((SERVER_READY_TIMEOUT_MINUTES * 60))" \
+                    ${DRY_RUN_ARG} \
+                    ${FAIL_FAST_ARG}
+            '''
+        }
+    }
+}
+
+pipeline {
+    agent { node { label params.NODE_LABEL } }
+
+    options {
+        ansiColor('xterm')
+        disableConcurrentBuilds()
+        timestamps()
+    }
+
+    parameters {
+        string(name: 'NODE_LABEL', defaultValue: 'qeff_nightly_node', description: 'Jenkins agent/node label')
+        string(name: 'REF_SPEC', defaultValue: '', description: 'Branch name or PR number to build. Empty = use the branch configured in this job\'s SCM.')
+        string(name: 'PYTHON_BIN', defaultValue: 'python3.12', description: 'Python used to create the benchmark venv')
+        string(name: 'VLLM_QAIC_REPO', defaultValue: 'https://github.com/qualcomm/vllm-qaic.git', description: 'vllm-qaic git clone URL')
+        string(name: 'VLLM_QAIC_BRANCH', defaultValue: 'main', description: 'vllm-qaic branch/tag to install')
+        string(name: 'QAIC_DISAGG_REPO', defaultValue: 'https://review.qualcomm.com/qranium/qaic-disagg', description: 'qaic-disagg git clone URL')
+        string(name: 'QAIC_DISAGG_BRANCH', defaultValue: 'main', description: 'qaic-disagg branch/tag to install')
+        string(name: 'QEFF_BRANCH', defaultValue: 'main', description: 'efficient-transformers branch consumed by vllm-qaic scripts/install.sh aot')
+        password(name: 'HF_TOKEN', defaultValue: '', description: 'HuggingFace token for gated models')
+        string(name: 'QSERVE_BENCHMARK_SCRIPT', defaultValue: '', description: 'Optional benchmark_serving.py path. Empty uses auto/fallback.')
+        string(name: 'SERVER_READY_TIMEOUT_MINUTES', defaultValue: '360', description: 'Server compile/load timeout per row')
+        string(name: 'ROWS_DEFAULT', defaultValue: 'ALL', description: 'Default config data rows: ALL, 1, 1:4, or 1,3. Row 1 is gpt2 smoke.')
+        string(name: 'ROWS_CCL', defaultValue: 'ALL', description: 'CCL config data rows')
+        string(name: 'ROWS_BLOCKING', defaultValue: 'ALL', description: 'Blocking config data rows')
+        string(name: 'ROWS_DISAGG_PD', defaultValue: 'ALL', description: 'Disagg PD config data rows')
+        booleanParam(name: 'RUN_DEFAULT', defaultValue: true, description: 'Run default CB + subfunction LLM configs')
+        booleanParam(name: 'RUN_CCL', defaultValue: true, description: 'Run CCL-enabled LLM configs')
+        booleanParam(name: 'RUN_BLOCKING', defaultValue: true, description: 'Run blocking LLM configs')
+        booleanParam(name: 'RUN_DISAGG_PD', defaultValue: true, description: 'Run PD disaggregated LLM configs')
+        booleanParam(name: 'SKIP_INSTALL', defaultValue: false, description: 'Reuse an already installed venv/repos in BENCH_ROOT')
+        booleanParam(name: 'DRY_RUN', defaultValue: false, description: 'Only build commands/log stubs/output CSV rows')
+        booleanParam(name: 'FAIL_FAST', defaultValue: false, description: 'Stop within a config after the first failing row')
+    }
+
+    environment {
+        BENCH_ROOT = "${WORKSPACE}/vllm_llm_workspace"
+        VENV_DIR = "${WORKSPACE}/vllm_llm_workspace/venv"
+        VLLM_QAIC_DIR = "${WORKSPACE}/vllm_llm_workspace/vllm-qaic"
+        QAIC_DISAGG_DIR = "${WORKSPACE}/vllm_llm_workspace/qaic-disagg"
+        VLLM_LLM_RESULTS_DIR = "${WORKSPACE}/vllm_llm_results/${BUILD_NUMBER}"
+        BENCHMARK_SCRIPT = "${WORKSPACE}/tests/nightly_pipeline/vllm_llm_benchmark/vllm_llm_benchmark.py"
+        QEFF_HOME = "${WORKSPACE}/vllm_llm_workspace/qeff_models"
+        HF_HOME = "${WORKSPACE}/vllm_llm_workspace/huggingface"
+        HF_TOKEN = "${params.HF_TOKEN}"
+        HF_HUB_ENABLE_HF_TRANSFER = '1'
+        TMPDIR = "/tmp/vllm_llm_${BUILD_NUMBER}"
+    }
+
+    stages {
+        stage('Checkout Ref') {
+            when { expression { params.REF_SPEC?.trim() } }
+            steps {
+                script {
+                    def refSpec = params.REF_SPEC.trim()
+                    def targetRef
+                    if (refSpec ==~ /[1-9][0-9]*/) {
+                        targetRef = "refs/remotes/origin/pr-${refSpec}"
+                        sh "git fetch --no-tags origin '+refs/pull/${refSpec}/head:${targetRef}'"
+                        echo "Building PR-${refSpec} at ${targetRef}"
+                    } else {
+                        if (!(refSpec ==~ /[A-Za-z0-9._\/-]+/)) {
+                            error("Unsafe REF_SPEC: ${refSpec}")
+                        }
+                        targetRef = "refs/remotes/origin/${refSpec}"
+                        sh "git fetch --no-tags origin '+refs/heads/${refSpec}:${targetRef}'"
+                        echo "Building branch '${refSpec}' at ${targetRef}"
+                    }
+                    sh "git switch --detach '${targetRef}'"
+                }
+            }
+        }
+
+        stage('Prepare Environment') {
+            steps {
+                sh '''#!/bin/bash
+                    set -euo pipefail
+                    mkdir -p "${BENCH_ROOT}" "${VLLM_LLM_RESULTS_DIR}" "${QEFF_HOME}" "${HF_HOME}" "${TMPDIR}"
+
+                    if [[ ! -d "${VENV_DIR}" ]]; then
+                        "${PYTHON_BIN}" -m venv "${VENV_DIR}"
+                    fi
+                    . "${VENV_DIR}/bin/activate"
+                    python -m pip install --upgrade pip setuptools wheel
+
+                    if [[ "${SKIP_INSTALL}" == "true" ]]; then
+                        echo "SKIP_INSTALL=true; reusing existing venv and repo checkouts."
+                        python "${BENCHMARK_SCRIPT}" --help >/dev/null
+                        exit 0
+                    fi
+
+                    clone_or_update() {
+                        local repo="$1"
+                        local dest="$2"
+                        local branch="$3"
+                        if [[ -d "${dest}/.git" ]]; then
+                            git -C "${dest}" fetch --all --tags
+                            git -C "${dest}" checkout "${branch}"
+                            git -C "${dest}" pull --ff-only origin "${branch}" || true
+                        else
+                            git clone --branch "${branch}" "${repo}" "${dest}"
+                        fi
+                    }
+
+                    clone_or_update "${VLLM_QAIC_REPO}" "${VLLM_QAIC_DIR}" "${VLLM_QAIC_BRANCH}"
+                    (
+                        cd "${VLLM_QAIC_DIR}"
+                        QEFF_BRANCH="${QEFF_BRANCH}" scripts/install.sh aot
+                    )
+
+                    clone_or_update "${QAIC_DISAGG_REPO}" "${QAIC_DISAGG_DIR}" "${QAIC_DISAGG_BRANCH}"
+                    python -m pip install -e "${QAIC_DISAGG_DIR}"
+
+                    python "${BENCHMARK_SCRIPT}" --help >/dev/null
+                '''
+            }
+        }
+
+        stage('Run Default LLM') {
+            when { expression { params.RUN_DEFAULT } }
+            steps {
+                script {
+                    runLlmConfig('default', params.ROWS_DEFAULT)
+                }
+            }
+        }
+
+        stage('Run CCL LLM') {
+            when { expression { params.RUN_CCL } }
+            steps {
+                script {
+                    runLlmConfig('ccl', params.ROWS_CCL)
+                }
+            }
+        }
+
+        stage('Run Blocking LLM') {
+            when { expression { params.RUN_BLOCKING } }
+            steps {
+                script {
+                    runLlmConfig('blocking', params.ROWS_BLOCKING)
+                }
+            }
+        }
+
+        stage('Run Disagg PD LLM') {
+            when { expression { params.RUN_DISAGG_PD } }
+            steps {
+                script {
+                    runLlmConfig('disagg_pd', params.ROWS_DISAGG_PD)
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            archiveArtifacts(
+                artifacts: 'vllm_llm_results/**/*.csv,vllm_llm_results/**/*.log',
+                allowEmptyArchive: true
+            )
+        }
+    }
+}
