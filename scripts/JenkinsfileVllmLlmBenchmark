@@ -161,8 +161,6 @@ pipeline {
                                 QEFF_BRANCH="${QEFF_BRANCH}" scripts/install.sh aot
                             )
 
-                            mkdir -p "${HOME}/.ssh"
-                            ssh-keyscan -p 29418 -H review.qualcomm.com >> "${HOME}/.ssh/known_hosts" 2>/dev/null || true
                             clone_or_update "${QAIC_DISAGG_REPO}" "${QAIC_DISAGG_DIR}" "${QAIC_DISAGG_BRANCH}"
                             python -m pip install -e "${QAIC_DISAGG_DIR}"
 
@@ -171,8 +169,14 @@ pipeline {
                     }
 
                     if (!params.SKIP_INSTALL && params.GERRIT_SSH_CREDENTIALS_ID?.trim()) {
-                        sshagent(credentials: [params.GERRIT_SSH_CREDENTIALS_ID]) {
-                            prepareSh()
+                        withCredentials([sshUserPrivateKey(
+                            credentialsId: params.GERRIT_SSH_CREDENTIALS_ID,
+                            keyFileVariable: 'GERRIT_SSH_KEY',
+                            usernameVariable: 'GERRIT_SSH_USER'
+                        )]) {
+                            withEnv(["GIT_SSH_COMMAND=ssh -i ${GERRIT_SSH_KEY} -l ${GERRIT_SSH_USER} -p 29418 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"]) {
+                                prepareSh()
+                            }
                         }
                     } else {
                         prepareSh()
