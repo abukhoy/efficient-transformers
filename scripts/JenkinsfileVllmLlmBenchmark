@@ -128,6 +128,9 @@ pipeline {
                     def prepareSh = {
                         sh '''#!/bin/bash
                             set -euo pipefail
+                            if [[ -n "${GERRIT_SSH_KEY:-}" ]]; then
+                                export GIT_SSH_COMMAND="ssh -F /dev/null -i ${GERRIT_SSH_KEY} -l ${GERRIT_SSH_USER} -p 29418 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+                            fi
                             mkdir -p "${BENCH_ROOT}" "${VLLM_LLM_RESULTS_DIR}" "${QEFF_HOME}" "${HF_HOME}" "${TMPDIR}"
 
                             if [[ ! -d "${VENV_DIR}" ]]; then
@@ -174,9 +177,7 @@ pipeline {
                             keyFileVariable: 'GERRIT_SSH_KEY',
                             usernameVariable: 'GERRIT_SSH_USER'
                         )]) {
-                            withEnv(["GIT_SSH_COMMAND=ssh -i ${GERRIT_SSH_KEY} -l ${GERRIT_SSH_USER} -p 29418 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"]) {
-                                prepareSh()
-                            }
+                            prepareSh()
                         }
                     } else {
                         prepareSh()
