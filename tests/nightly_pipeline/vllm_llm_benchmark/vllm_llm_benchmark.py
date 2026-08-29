@@ -48,6 +48,25 @@ DISAGG_READY_MARKERS = (
     "Uvicorn running on",
 )
 
+LATEST_MODELS = {
+    "allenai/OLMo-2-0425-1B",
+    "Qwen/Qwen3-30B-A3B-Instruct-2507",
+    "openai/gpt-oss-20b",
+    "meta-llama/Llama-3.3-70B-Instruct",
+    "meta-llama/Llama-3.2-1B",
+    "meta-llama/Llama-3.2-3B",
+    "meta-llama/Llama-3.1-8B",
+    "meta-llama/Llama-3.1-70B",
+    "meta-llama/Meta-Llama-3-8B",
+    "meta-llama/Meta-Llama-3-70B",
+    "zai-org/GLM-4.5",
+}
+
+SKIPPED_MODELS = {
+    "zai-org/GLM-4.5",
+    "hpcai-tech/grok-1",
+}
+
 BENCH_BLOCK_RE = re.compile(r"=+\s*Serving Benchmark Result\s*=+(.*?)=+", re.DOTALL)
 BENCH_KV_RE = re.compile(
     r"^([A-Za-z][A-Za-z0-9 /().\-]*?):\s+([-+]?\d+(?:\.\d+)?)\s*$",
@@ -1055,6 +1074,11 @@ def build_arg_parser() -> argparse.ArgumentParser:
         help="Data row selector: ALL, 1, 1:4, or 1,3.",
     )
     parser.add_argument(
+        "--latest-models-only",
+        default="true",
+        help="If true (default), restrict to the curated LATEST_MODELS list. SKIPPED_MODELS is always excluded.",
+    )
+    parser.add_argument(
         "--results-dir",
         default="vllm_llm_results",
         help="Log/result root.",
@@ -1110,6 +1134,7 @@ def main() -> int:
     output_csv = Path(args.output_csv)
     rows = read_csv_rows(input_csv)
     selected = set(parse_rows_spec(args.rows, len(rows)))
+    latest_only = parse_bool(args.latest_models_only, default=True)
 
     if output_csv.exists():
         output_csv.unlink()
@@ -1117,6 +1142,13 @@ def main() -> int:
     failures = 0
     for row in rows:
         if int(row["_data_row"]) not in selected:
+            continue
+        model = value(row, "model")
+        if model in SKIPPED_MODELS:
+            print(f"Skipping row {row['_data_row']} ({model}): in SKIPPED_MODELS (>70B).")
+            continue
+        if latest_only and model not in LATEST_MODELS:
+            print(f"Skipping row {row['_data_row']} ({model}): not in LATEST_MODELS (latest-only mode).")
             continue
         ok = run_one(row, args, args.config_name, output_csv)
         if not ok:

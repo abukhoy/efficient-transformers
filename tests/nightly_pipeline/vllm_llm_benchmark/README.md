@@ -64,3 +64,23 @@ blocking columns.
 For `server_type=qaic_disagg`, the runner builds `python -m qaic_disagg` using
 the PD columns such as `prefill_device_group`, `decode_device_group`,
 `prefill_override_qaic_config`, and `decode_override_qaic_config`.
+
+## Model Filtering
+
+After `--rows` selects which CSV rows are in play, two model-name filters are
+applied, in order:
+
+1. **`SKIPPED_MODELS`** (always enforced, no override): a hardcoded set of
+   models too large to run in this pipeline (>70B real params) — currently
+   `zai-org/GLM-4.5` (~355B, MoE) and `hpcai-tech/grok-1` (~314B).
+2. **`LATEST_MODELS_ONLY`** (`--latest-models-only`, default `true`): when
+   enabled, restricts runs to the curated `LATEST_MODELS` set in
+   `vllm_llm_benchmark.py`. Set to `false` (Jenkins param `LATEST_MODELS_ONLY`)
+   to run all non-skipped models in the CSV.
+
+`zai-org/GLM-4.5` is in both `LATEST_MODELS` and `SKIPPED_MODELS` — the
+skip-list always wins, so it is excluded regardless of the latest-only flag.
+
+Skipped rows are logged to stdout with the reason and do not appear in the
+output CSV, matching how `enabled=false` rows are already excluded silently.
+

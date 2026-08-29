@@ -5,6 +5,7 @@ def configCsv(String configName) {
 def runLlmConfig(String configName, String rowSpec) {
     def dryRunArg = params.DRY_RUN ? '--dry-run' : ''
     def failFastArg = params.FAIL_FAST ? '--fail-fast' : ''
+    def latestModelsOnlyArg = params.LATEST_MODELS_ONLY ? 'true' : 'false'
     def outputCsv = "${env.VLLM_LLM_RESULTS_DIR}/llm_${configName}_results.csv"
 
     catchError(buildResult: 'FAILURE', stageResult: 'FAILURE') {
@@ -15,6 +16,7 @@ def runLlmConfig(String configName, String rowSpec) {
             "ROWS_TO_RUN=${rowSpec ?: 'ALL'}",
             "DRY_RUN_ARG=${dryRunArg}",
             "FAIL_FAST_ARG=${failFastArg}",
+            "LATEST_MODELS_ONLY_ARG=${latestModelsOnlyArg}",
         ]) {
             sh '''#!/bin/bash
                 set -euo pipefail
@@ -27,6 +29,7 @@ def runLlmConfig(String configName, String rowSpec) {
                     --input-csv "${INPUT_CSV}" \
                     --output-csv "${OUTPUT_CSV}" \
                     --rows "${ROWS_TO_RUN}" \
+                    --latest-models-only "${LATEST_MODELS_ONLY_ARG:-true}" \
                     --results-dir "${VLLM_LLM_RESULTS_DIR}" \
                     --base-dir "${BENCH_ROOT}" \
                     --python-bin python \
@@ -73,6 +76,8 @@ pipeline {
         booleanParam(name: 'SKIP_INSTALL', defaultValue: false, description: 'Reuse an already installed venv/repos in BENCH_ROOT')
         booleanParam(name: 'DRY_RUN', defaultValue: false, description: 'Only build commands/log stubs/output CSV rows')
         booleanParam(name: 'FAIL_FAST', defaultValue: false, description: 'Stop within a config after the first failing row')
+        booleanParam(name: 'LATEST_MODELS_ONLY', defaultValue: true, description: 'Restrict runs to the curated LATEST_MODELS list (models >70B are always skipped regardless of this flag)')
+        booleanParam(name: 'CLEAN_WORKSPACE_AFTER_RUN', defaultValue: false, description: 'Delete the Jenkins workspace after the build finishes (does not affect the persistent HF/results caches under ${HOME}/.cache)')
     }
 
     environment {
@@ -80,13 +85,13 @@ pipeline {
         VENV_DIR = "${WORKSPACE}/vllm_llm_workspace/venv"
         VLLM_QAIC_DIR = "${WORKSPACE}/vllm_llm_workspace/vllm-qaic"
         QAIC_DISAGG_DIR = "${WORKSPACE}/vllm_llm_workspace/qaic-disagg"
-        VLLM_LLM_RESULTS_DIR = "${WORKSPACE}/vllm_llm_results/${BUILD_NUMBER}"
+        VLLM_LLM_RESULTS_DIR = "${HOME}/.cache/vllm_llm_results/${BUILD_NUMBER}"
         BENCHMARK_SCRIPT = "${WORKSPACE}/tests/nightly_pipeline/vllm_llm_benchmark/vllm_llm_benchmark.py"
         QEFF_HOME = "${WORKSPACE}/vllm_llm_workspace/qeff_models"
-        HF_HOME = "${WORKSPACE}/vllm_llm_workspace/huggingface"
+        HF_HOME = "${HOME}/.cache/huggingface"
         HF_TOKEN = "${params.HF_TOKEN}"
         HF_HUB_ENABLE_HF_TRANSFER = '1'
-        TMPDIR = "/tmp/vllm_llm_${BUILD_NUMBER}"
+        TMPDIR = "${WORKSPACE}/vllm_llm_workspace/tmp"
         PYTHON_BIN = "${params.PYTHON_BIN}"
         VLLM_QAIC_REPO = "${params.VLLM_QAIC_REPO}"
         VLLM_QAIC_BRANCH = "${params.VLLM_QAIC_BRANCH}"
@@ -132,6 +137,7 @@ pipeline {
                                 export GIT_SSH_COMMAND="ssh -F /dev/null -i ${GERRIT_SSH_KEY} -l ${GERRIT_SSH_USER} -p 29418 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
                             fi
                             mkdir -p "${BENCH_ROOT}" "${VLLM_LLM_RESULTS_DIR}" "${QEFF_HOME}" "${HF_HOME}" "${TMPDIR}"
+                            ln -sfn "$(dirname "${VLLM_LLM_RESULTS_DIR}")" "${WORKSPACE}/vllm_llm_results"
 
                             if [[ ! -d "${VENV_DIR}" ]]; then
                                 "${PYTHON_BIN}" -m venv "${VENV_DIR}"
@@ -229,6 +235,12 @@ pipeline {
                 artifacts: 'vllm_llm_results/**/*.csv,vllm_llm_results/**/*.log',
                 allowEmptyArchive: true
             )
+            script {
+                if (params.CLEAN_WORKSPACE_AFTER_RUN) {
+                    echo 'CLEAN_WORKSPACE_AFTER_RUN=true; deleting workspace.'
+                    deleteDir()
+                }
+            }
         }
     }
 }
