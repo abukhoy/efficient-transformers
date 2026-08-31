@@ -26,13 +26,13 @@ def runLlmConfig(String configName, String rowSpec) {
             sh '''#!/bin/bash
                 set -euo pipefail
                 sudo docker exec -i \
-                    -e CONFIG_NAME="${CONFIG_NAME}" \
-                    -e INPUT_CSV="${INPUT_CSV}" \
-                    -e OUTPUT_CSV="${OUTPUT_CSV}" \
-                    -e ROWS_TO_RUN="${ROWS_TO_RUN}" \
-                    -e DRY_RUN_ARG="${DRY_RUN_ARG}" \
-                    -e FAIL_FAST_ARG="${FAIL_FAST_ARG}" \
-                    -e LATEST_MODELS_ONLY_ARG="${LATEST_MODELS_ONLY_ARG}" \
+                    -e CONFIG_NAME="${CONFIG_NAME:-}" \
+                    -e INPUT_CSV="${INPUT_CSV:-}" \
+                    -e OUTPUT_CSV="${OUTPUT_CSV:-}" \
+                    -e ROWS_TO_RUN="${ROWS_TO_RUN:-ALL}" \
+                    -e DRY_RUN_ARG="${DRY_RUN_ARG:-}" \
+                    -e FAIL_FAST_ARG="${FAIL_FAST_ARG:-}" \
+                    -e LATEST_MODELS_ONLY_ARG="${LATEST_MODELS_ONLY_ARG:-true}" \
                     ${BUILD_TAG} bash -s <<'SCRIPT'
 set -euo pipefail
 cd /efficient-transformers
