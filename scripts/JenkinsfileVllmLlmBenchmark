@@ -18,26 +18,43 @@ def runLlmConfig(String configName, String rowSpec) {
             "FAIL_FAST_ARG=${failFastArg}",
             "LATEST_MODELS_ONLY_ARG=${latestModelsOnlyArg}",
         ]) {
+            // BENCHMARK_SCRIPT/VENV_DIR/etc are already set inside the container via
+            // `docker run -e` (Start Container stage); only the per-invocation values are
+            // passed explicitly here. The heredoc uses a quoted delimiter so none of the
+            // ${...} references below are expanded by the host shell - they are expanded
+            // by bash running inside the container, against the container's own env.
             sh '''#!/bin/bash
                 set -euo pipefail
-                . "${VENV_DIR}/bin/activate"
-                export PYTHONUNBUFFERED=1
-                export TOKENIZERS_PARALLELISM=false
+                sudo docker exec -i \
+                    -e CONFIG_NAME="${CONFIG_NAME}" \
+                    -e INPUT_CSV="${INPUT_CSV}" \
+                    -e OUTPUT_CSV="${OUTPUT_CSV}" \
+                    -e ROWS_TO_RUN="${ROWS_TO_RUN}" \
+                    -e DRY_RUN_ARG="${DRY_RUN_ARG}" \
+                    -e FAIL_FAST_ARG="${FAIL_FAST_ARG}" \
+                    -e LATEST_MODELS_ONLY_ARG="${LATEST_MODELS_ONLY_ARG}" \
+                    ${BUILD_TAG} bash -s <<'SCRIPT'
+set -euo pipefail
+cd /efficient-transformers
+. "${VENV_DIR}/bin/activate"
+export PYTHONUNBUFFERED=1
+export TOKENIZERS_PARALLELISM=false
 
-                python "${BENCHMARK_SCRIPT}" \
-                    --config-name "${CONFIG_NAME}" \
-                    --input-csv "${INPUT_CSV}" \
-                    --output-csv "${OUTPUT_CSV}" \
-                    --rows "${ROWS_TO_RUN}" \
-                    --latest-models-only "${LATEST_MODELS_ONLY_ARG:-true}" \
-                    --results-dir "${VLLM_LLM_RESULTS_DIR}" \
-                    --base-dir "${BENCH_ROOT}" \
-                    --python-bin python \
-                    --qserve-benchmark-script "${QSERVE_BENCHMARK_SCRIPT:-}" \
-                    --vllm-qaic-dir "${VLLM_QAIC_DIR}" \
-                    --server-ready-timeout-s "$((SERVER_READY_TIMEOUT_MINUTES * 60))" \
-                    ${DRY_RUN_ARG:-} \
-                    ${FAIL_FAST_ARG:-}
+python "${BENCHMARK_SCRIPT}" \
+    --config-name "${CONFIG_NAME}" \
+    --input-csv "${INPUT_CSV}" \
+    --output-csv "${OUTPUT_CSV}" \
+    --rows "${ROWS_TO_RUN}" \
+    --latest-models-only "${LATEST_MODELS_ONLY_ARG:-true}" \
+    --results-dir "${VLLM_LLM_RESULTS_DIR}" \
+    --base-dir "${BENCH_ROOT}" \
+    --python-bin python \
+    --qserve-benchmark-script "${QSERVE_BENCHMARK_SCRIPT:-}" \
+    --vllm-qaic-dir "${VLLM_QAIC_DIR}" \
+    --server-ready-timeout-s "$((SERVER_READY_TIMEOUT_MINUTES * 60))" \
+    ${DRY_RUN_ARG:-} \
+    ${FAIL_FAST_ARG:-}
+SCRIPT
             '''
         }
     }
@@ -81,17 +98,20 @@ pipeline {
     }
 
     environment {
-        BENCH_ROOT = "${WORKSPACE}/vllm_llm_workspace"
-        VENV_DIR = "${WORKSPACE}/vllm_llm_workspace/venv"
-        VLLM_QAIC_DIR = "${WORKSPACE}/vllm_llm_workspace/vllm-qaic"
-        QAIC_DISAGG_DIR = "${WORKSPACE}/vllm_llm_workspace/qaic-disagg"
+        // All paths below are inside the container (bind-mounted at /efficient-transformers
+        // by the Start Container stage), except VLLM_LLM_RESULTS_DIR/HF_HOME which live under
+        // the host's ${HOME}/.cache and are bind-mounted into the container at the same path.
+        BENCH_ROOT = "/efficient-transformers/vllm_llm_workspace"
+        VENV_DIR = "/efficient-transformers/vllm_llm_workspace/venv"
+        VLLM_QAIC_DIR = "/efficient-transformers/vllm_llm_workspace/vllm-qaic"
+        QAIC_DISAGG_DIR = "/efficient-transformers/vllm_llm_workspace/qaic-disagg"
         VLLM_LLM_RESULTS_DIR = "${HOME}/.cache/vllm_llm_results/${BUILD_NUMBER}"
-        BENCHMARK_SCRIPT = "${WORKSPACE}/tests/nightly_pipeline/vllm_llm_benchmark/vllm_llm_benchmark.py"
-        QEFF_HOME = "${WORKSPACE}/vllm_llm_workspace/qeff_models"
+        BENCHMARK_SCRIPT = "/efficient-transformers/tests/nightly_pipeline/vllm_llm_benchmark/vllm_llm_benchmark.py"
+        QEFF_HOME = "/efficient-transformers/vllm_llm_workspace/qeff_models"
         HF_HOME = "${HOME}/.cache/huggingface"
         HF_TOKEN = "${params.HF_TOKEN}"
         HF_HUB_ENABLE_HF_TRANSFER = '1'
-        TMPDIR = "${WORKSPACE}/vllm_llm_workspace/tmp"
+        TMPDIR = "/efficient-transformers/vllm_llm_workspace/tmp"
         PYTHON_BIN = "${params.PYTHON_BIN}"
         VLLM_QAIC_REPO = "${params.VLLM_QAIC_REPO}"
         VLLM_QAIC_BRANCH = "${params.VLLM_QAIC_BRANCH}"
@@ -127,53 +147,111 @@ pipeline {
             }
         }
 
+        stage('Start Container') {
+            steps {
+                sh '''#!/bin/bash
+                    set -euo pipefail
+                    sudo docker rm -f ${BUILD_TAG} >/dev/null 2>&1 || true
+                    mkdir -p "${HOME}/.cache/huggingface" "${HOME}/.cache/vllm_llm_results"
+                    sudo docker run --privileged -dit --name ${BUILD_TAG} \
+                        -e HF_TOKEN="${HF_TOKEN}" \
+                        -e HF_HUB_ENABLE_HF_TRANSFER="${HF_HUB_ENABLE_HF_TRANSFER}" \
+                        -e TMPDIR="${TMPDIR}" \
+                        -e VENV_DIR="${VENV_DIR}" \
+                        -e BENCH_ROOT="${BENCH_ROOT}" \
+                        -e VLLM_QAIC_DIR="${VLLM_QAIC_DIR}" \
+                        -e QAIC_DISAGG_DIR="${QAIC_DISAGG_DIR}" \
+                        -e VLLM_LLM_RESULTS_DIR="${VLLM_LLM_RESULTS_DIR}" \
+                        -e BENCHMARK_SCRIPT="${BENCHMARK_SCRIPT}" \
+                        -e QEFF_HOME="${QEFF_HOME}" \
+                        -e HF_HOME="${HF_HOME}" \
+                        -e PYTHON_BIN="${PYTHON_BIN}" \
+                        -e VLLM_QAIC_REPO="${VLLM_QAIC_REPO}" \
+                        -e VLLM_QAIC_BRANCH="${VLLM_QAIC_BRANCH}" \
+                        -e QAIC_DISAGG_REPO="${QAIC_DISAGG_REPO}" \
+                        -e QAIC_DISAGG_BRANCH="${QAIC_DISAGG_BRANCH}" \
+                        -e QEFF_BRANCH="${QEFF_BRANCH}" \
+                        -e SKIP_INSTALL="${SKIP_INSTALL}" \
+                        -e SERVER_READY_TIMEOUT_MINUTES="${SERVER_READY_TIMEOUT_MINUTES}" \
+                        -e QSERVE_BENCHMARK_SCRIPT="${QSERVE_BENCHMARK_SCRIPT}" \
+                        -v ./:/efficient-transformers \
+                        -v ${HOME}/.cache:${HOME}/.cache \
+                        ${DOCKER_LATEST}:master_latest
+                '''
+            }
+        }
+
         stage('Prepare Environment') {
             steps {
                 script {
                     def prepareSh = {
                         sh '''#!/bin/bash
                             set -euo pipefail
-                            if [[ -n "${GERRIT_SSH_KEY:-}" ]]; then
-                                export GIT_SSH_COMMAND="ssh -F /dev/null -i ${GERRIT_SSH_KEY} -l ${GERRIT_SSH_USER} -p 29418 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
-                            fi
-                            mkdir -p "${BENCH_ROOT}" "${VLLM_LLM_RESULTS_DIR}" "${QEFF_HOME}" "${HF_HOME}" "${TMPDIR}"
-                            ln -sfn "$(dirname "${VLLM_LLM_RESULTS_DIR}")" "${WORKSPACE}/vllm_llm_results"
+                            sudo docker exec -i ${BUILD_TAG} bash -s <<'SCRIPT'
+set -euo pipefail
+mkdir -p "${BENCH_ROOT}" "${VLLM_LLM_RESULTS_DIR}" "${QEFF_HOME}" "${HF_HOME}" "${TMPDIR}"
+ln -sfn "$(dirname "${VLLM_LLM_RESULTS_DIR}")" "/efficient-transformers/vllm_llm_results"
 
-                            if [[ ! -d "${VENV_DIR}" ]]; then
-                                "${PYTHON_BIN}" -m venv "${VENV_DIR}"
-                            fi
-                            . "${VENV_DIR}/bin/activate"
-                            python -m pip install --upgrade pip setuptools wheel
+if [[ ! -d "${VENV_DIR}" ]]; then
+    apt update
+    DEBIAN_FRONTEND=noninteractive apt install -y tzdata python3.12-venv python3.12-dev build-essential
+    "${PYTHON_BIN}" -m venv "${VENV_DIR}"
+fi
+. "${VENV_DIR}/bin/activate"
+python -m pip install --upgrade pip setuptools wheel
 
-                            if [[ "${SKIP_INSTALL}" == "true" ]]; then
-                                echo "SKIP_INSTALL=true; reusing existing venv and repo checkouts."
-                                python "${BENCHMARK_SCRIPT}" --help >/dev/null
-                                exit 0
-                            fi
+if [[ "${SKIP_INSTALL}" == "true" ]]; then
+    echo "SKIP_INSTALL=true; reusing existing venv and repo checkouts."
+    python "${BENCHMARK_SCRIPT}" --help >/dev/null
+    exit 0
+fi
 
-                            clone_or_update() {
-                                local repo="$1"
-                                local dest="$2"
-                                local branch="$3"
-                                if [[ -d "${dest}/.git" ]]; then
-                                    git -C "${dest}" fetch --all --tags
-                                    git -C "${dest}" checkout "${branch}"
-                                    git -C "${dest}" pull --ff-only origin "${branch}" || true
-                                else
-                                    git clone --branch "${branch}" "${repo}" "${dest}"
-                                fi
-                            }
+clone_or_update() {
+    local repo="$1"
+    local dest="$2"
+    local branch="$3"
+    if [[ -d "${dest}/.git" ]]; then
+        git -C "${dest}" fetch --all --tags
+        git -C "${dest}" checkout "${branch}"
+        git -C "${dest}" pull --ff-only origin "${branch}" || true
+    else
+        git clone --branch "${branch}" "${repo}" "${dest}"
+    fi
+}
 
-                            clone_or_update "${VLLM_QAIC_REPO}" "${VLLM_QAIC_DIR}" "${VLLM_QAIC_BRANCH}"
-                            (
-                                cd "${VLLM_QAIC_DIR}"
-                                QEFF_BRANCH="${QEFF_BRANCH}" scripts/install.sh aot
-                            )
+clone_or_update "${VLLM_QAIC_REPO}" "${VLLM_QAIC_DIR}" "${VLLM_QAIC_BRANCH}"
+(
+    cd "${VLLM_QAIC_DIR}"
+    QEFF_BRANCH="${QEFF_BRANCH}" scripts/install.sh aot
+)
+SCRIPT
+                        '''
+                    }
 
-                            clone_or_update "${QAIC_DISAGG_REPO}" "${QAIC_DISAGG_DIR}" "${QAIC_DISAGG_BRANCH}"
-                            python -m pip install -e "${QAIC_DISAGG_DIR}"
+                    def installQaicDisagg = {
+                        sh '''#!/bin/bash
+                            set -euo pipefail
+                            sudo docker exec -i ${BUILD_TAG} bash -s <<'SCRIPT'
+set -euo pipefail
 
-                            python "${BENCHMARK_SCRIPT}" --help >/dev/null
+clone_or_update() {
+    local repo="$1"
+    local dest="$2"
+    local branch="$3"
+    if [[ -d "${dest}/.git" ]]; then
+        git -C "${dest}" fetch --all --tags
+        git -C "${dest}" checkout "${branch}"
+        git -C "${dest}" pull --ff-only origin "${branch}" || true
+    else
+        git clone --branch "${branch}" "${repo}" "${dest}"
+    fi
+}
+
+clone_or_update "${QAIC_DISAGG_REPO}" "${QAIC_DISAGG_DIR}" "${QAIC_DISAGG_BRANCH}"
+. "${VENV_DIR}/bin/activate"
+python -m pip install -e "${QAIC_DISAGG_DIR}"
+python "${BENCHMARK_SCRIPT}" --help >/dev/null
+SCRIPT
                         '''
                     }
 
@@ -184,9 +262,47 @@ pipeline {
                             usernameVariable: 'GERRIT_SSH_USER'
                         )]) {
                             prepareSh()
+                            // GERRIT_SSH_KEY/GERRIT_SSH_USER here are host-side env vars set by
+                            // withCredentials. They are expanded by the host shell below (this
+                            // outer sh block is NOT the quoted heredoc, so normal shell expansion
+                            // applies), then re-supplied to the container's environment explicitly
+                            // via `docker exec -e`, since docker exec does not inherit the host shell's
+                            // environment on its own.
+                            sh '''#!/bin/bash
+                                set -euo pipefail
+                                sudo docker cp "${GERRIT_SSH_KEY}" ${BUILD_TAG}:/tmp/gerrit_ssh_key
+                                sudo docker exec ${BUILD_TAG} chmod 600 /tmp/gerrit_ssh_key
+                                sudo docker exec -e GERRIT_SSH_KEY=/tmp/gerrit_ssh_key -e GERRIT_SSH_USER="${GERRIT_SSH_USER}" -i ${BUILD_TAG} bash -s <<'SCRIPT'
+set -euo pipefail
+export GIT_SSH_COMMAND="ssh -F /dev/null -i ${GERRIT_SSH_KEY} -l ${GERRIT_SSH_USER} -p 29418 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+
+clone_or_update() {
+    local repo="$1"
+    local dest="$2"
+    local branch="$3"
+    if [[ -d "${dest}/.git" ]]; then
+        git -C "${dest}" fetch --all --tags
+        git -C "${dest}" checkout "${branch}"
+        git -C "${dest}" pull --ff-only origin "${branch}" || true
+    else
+        git clone --branch "${branch}" "${repo}" "${dest}"
+    fi
+}
+
+clone_or_update "${QAIC_DISAGG_REPO}" "${QAIC_DISAGG_DIR}" "${QAIC_DISAGG_BRANCH}"
+. "${VENV_DIR}/bin/activate"
+python -m pip install -e "${QAIC_DISAGG_DIR}"
+python "${BENCHMARK_SCRIPT}" --help >/dev/null
+rm -f /tmp/gerrit_ssh_key
+SCRIPT
+                            '''
+                            sh 'sudo docker exec ${BUILD_TAG} rm -f /tmp/gerrit_ssh_key || true'
                         }
                     } else {
                         prepareSh()
+                        if (!params.SKIP_INSTALL) {
+                            installQaicDisagg()
+                        }
                     }
                 }
             }
@@ -231,8 +347,32 @@ pipeline {
 
     post {
         always {
+            script {
+                try {
+                    sh '''
+                        sudo docker inspect --format 'status={{.State.Status}} oom_killed={{.State.OOMKilled}} exit_code={{.State.ExitCode}} error={{json .State.Error}} memory_limit={{.HostConfig.Memory}}' ${BUILD_TAG} || true
+                        sudo docker stats --no-stream --format 'container={{.Name}} memory={{.MemUsage}} memory_percent={{.MemPerc}}' ${BUILD_TAG} || true
+                        sudo journalctl -k --since '-20 minutes' --no-pager 2>/dev/null | grep -Ei 'oom|out of memory|killed process|memory cgroup' | tail -100 || true
+                    '''
+                } catch (error) {
+                    echo "Failed to collect container diagnostics: ${error}"
+                }
+                try {
+                    sh 'sudo docker rm -f ${BUILD_TAG}'
+                } catch (error) {
+                    echo "Failed to delete container ${BUILD_TAG}: ${error}"
+                }
+                try {
+                    // The container runs as root (apt install requires it), so files it wrote
+                    // into the bind-mounted workspace are root-owned on the host; fix that up
+                    // before Jenkins (running as a non-root agent user) touches the workspace.
+                    sh 'sudo chown -R $(id -un) .'
+                } catch (error) {
+                    echo "Failed to change ownership: ${error}"
+                }
+            }
             archiveArtifacts(
-                artifacts: 'vllm_llm_results/**/*.csv,vllm_llm_results/**/*.log',
+                artifacts: 'vllm_llm_results/${BUILD_NUMBER}/*.csv',
                 allowEmptyArchive: true
             )
             script {
