@@ -381,7 +381,7 @@ SCRIPT
                 }
             }
             archiveArtifacts(
-                artifacts: 'vllm_llm_results/${BUILD_NUMBER}/*.csv',
+                artifacts: "vllm_llm_results/${env.BUILD_NUMBER}/*.csv",
                 allowEmptyArchive: true
             )
             script {
