@@ -156,6 +156,7 @@ pipeline {
             steps {
                 sh '''#!/bin/bash
                     set -euo pipefail
+                    . ~/.bashrc
                     sudo docker rm -f ${BUILD_TAG} >/dev/null 2>&1 || true
                     mkdir -p "${HOME}/.cache/huggingface" "${HOME}/.cache/vllm_llm_results"
                     # HF_TOKEN_PARAM comes from the HF_TOKEN Jenkins param (may be empty). When
