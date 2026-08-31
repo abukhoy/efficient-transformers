@@ -79,7 +79,7 @@ pipeline {
         string(name: 'QAIC_DISAGG_BRANCH', defaultValue: 'master', description: 'qaic-disagg branch/tag to install')
         string(name: 'GERRIT_SSH_CREDENTIALS_ID', defaultValue: 'gerrit-ssh-key', description: 'Jenkins "SSH Username with private key" credential ID for Gerrit (review.qualcomm.com) access to clone qaic-disagg. Required unless SKIP_INSTALL=true.')
         string(name: 'QEFF_BRANCH', defaultValue: 'main', description: 'efficient-transformers branch consumed by vllm-qaic scripts/install.sh aot')
-        password(name: 'HF_TOKEN', defaultValue: '', description: 'HuggingFace token for gated models')
+        password(name: 'HF_TOKEN', defaultValue: '', description: 'HuggingFace token for gated models. Optional - leave empty to reuse the HF_TOKEN already exported in the Jenkins agent host environment.')
         string(name: 'QSERVE_BENCHMARK_SCRIPT', defaultValue: '', description: 'Optional benchmark_serving.py path. Empty uses auto/fallback.')
         string(name: 'SERVER_READY_TIMEOUT_MINUTES', defaultValue: '360', description: 'Server compile/load timeout per row')
         string(name: 'ROWS_DEFAULT', defaultValue: 'ALL', description: 'Default config data rows: ALL, 1, 1:4, or 1,3. Row 1 is gpt2 smoke.')
@@ -109,7 +109,12 @@ pipeline {
         BENCHMARK_SCRIPT = "/efficient-transformers/tests/nightly_pipeline/vllm_llm_benchmark/vllm_llm_benchmark.py"
         QEFF_HOME = "/efficient-transformers/vllm_llm_workspace/qeff_models"
         HF_HOME = "${HOME}/.cache/huggingface"
-        HF_TOKEN = "${params.HF_TOKEN}"
+        // Intentionally NOT named HF_TOKEN: declaring HF_TOKEN itself here would force every
+        // step's shell env to this value (even ''), shadowing any HF_TOKEN already exported in
+        // the Jenkins agent's host environment. Keeping it under a different name lets the
+        // Start Container stage fall back to the ambient host HF_TOKEN via shell `${HF_TOKEN:-}`
+        // when the param is left empty.
+        HF_TOKEN_PARAM = "${params.HF_TOKEN}"
         HF_HUB_ENABLE_HF_TRANSFER = '1'
         TMPDIR = "/efficient-transformers/vllm_llm_workspace/tmp"
         PYTHON_BIN = "${params.PYTHON_BIN}"
@@ -153,8 +158,11 @@ pipeline {
                     set -euo pipefail
                     sudo docker rm -f ${BUILD_TAG} >/dev/null 2>&1 || true
                     mkdir -p "${HOME}/.cache/huggingface" "${HOME}/.cache/vllm_llm_results"
+                    # HF_TOKEN_PARAM comes from the HF_TOKEN Jenkins param (may be empty). When
+                    # empty, fall back to HF_TOKEN already exported in this agent's host shell env.
+                    RESOLVED_HF_TOKEN="${HF_TOKEN_PARAM:-${HF_TOKEN:-}}"
                     sudo docker run --privileged -dit --name ${BUILD_TAG} \
-                        -e HF_TOKEN="${HF_TOKEN}" \
+                        -e HF_TOKEN="${RESOLVED_HF_TOKEN}" \
                         -e HF_HUB_ENABLE_HF_TRANSFER="${HF_HUB_ENABLE_HF_TRANSFER}" \
                         -e TMPDIR="${TMPDIR}" \
                         -e VENV_DIR="${VENV_DIR}" \
@@ -173,7 +181,7 @@ pipeline {
                         -e QEFF_BRANCH="${QEFF_BRANCH}" \
                         -e SKIP_INSTALL="${SKIP_INSTALL}" \
                         -e SERVER_READY_TIMEOUT_MINUTES="${SERVER_READY_TIMEOUT_MINUTES}" \
-                        -e QSERVE_BENCHMARK_SCRIPT="${QSERVE_BENCHMARK_SCRIPT}" \
+                        -e QSERVE_BENCHMARK_SCRIPT="${QSERVE_BENCHMARK_SCRIPT:-}" \
                         -v ./:/efficient-transformers \
                         -v ${HOME}/.cache:${HOME}/.cache \
                         ${DOCKER_LATEST}:master_latest
