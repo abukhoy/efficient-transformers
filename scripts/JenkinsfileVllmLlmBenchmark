@@ -60,6 +60,67 @@ SCRIPT
     }
 }
 
+def runBenchConfig(String scriptEnvVar, String csvBaseName, String rowSpec) {
+    def dryRunArg = params.DRY_RUN ? '--dry-run' : ''
+    def failFastArg = params.FAIL_FAST ? '--fail-fast' : ''
+    def latestModelsOnlyArg = params.LATEST_MODELS_ONLY ? 'true' : 'false'
+    def inputCsv = "tests/nightly_pipeline/vllm_llm_benchmark/configs/${csvBaseName}_configs.csv"
+    def outputCsv = "${env.VLLM_LLM_RESULTS_DIR}/${csvBaseName}_results.csv"
+
+    catchError(buildResult: 'FAILURE', stageResult: 'FAILURE') {
+        withEnv([
+            "CONFIG_NAME=${csvBaseName}",
+            "INPUT_CSV=${inputCsv}",
+            "OUTPUT_CSV=${outputCsv}",
+            "ROWS_TO_RUN=${rowSpec ?: 'ALL'}",
+            "DRY_RUN_ARG=${dryRunArg}",
+            "FAIL_FAST_ARG=${failFastArg}",
+            "LATEST_MODELS_ONLY_ARG=${latestModelsOnlyArg}",
+            "SCRIPT_ENV_VAR=${scriptEnvVar}",
+        ]) {
+            // BENCH_SCRIPT is resolved inside the container via bash indirect
+            // expansion ("${!SCRIPT_ENV_VAR}") so this single helper can drive
+            // either EMBEDDING_BENCHMARK_SCRIPT or AUDIO_BENCHMARK_SCRIPT
+            // without a third near-duplicate docker exec heredoc.
+            sh '''#!/bin/bash
+                set -euo pipefail
+                sudo docker exec -i \
+                    -e CONFIG_NAME="${CONFIG_NAME:-}" \
+                    -e INPUT_CSV="${INPUT_CSV:-}" \
+                    -e OUTPUT_CSV="${OUTPUT_CSV:-}" \
+                    -e ROWS_TO_RUN="${ROWS_TO_RUN:-ALL}" \
+                    -e DRY_RUN_ARG="${DRY_RUN_ARG:-}" \
+                    -e FAIL_FAST_ARG="${FAIL_FAST_ARG:-}" \
+                    -e LATEST_MODELS_ONLY_ARG="${LATEST_MODELS_ONLY_ARG:-true}" \
+                    -e SCRIPT_ENV_VAR="${SCRIPT_ENV_VAR:-}" \
+                    ${BUILD_TAG} bash -s <<'SCRIPT'
+set -euo pipefail
+cd /efficient-transformers
+. "${VENV_DIR}/bin/activate"
+export PYTHONUNBUFFERED=1
+export TOKENIZERS_PARALLELISM=false
+BENCH_SCRIPT="${!SCRIPT_ENV_VAR}"
+
+python "${BENCH_SCRIPT}" \
+    --config-name "${CONFIG_NAME}" \
+    --input-csv "${INPUT_CSV}" \
+    --output-csv "${OUTPUT_CSV}" \
+    --rows "${ROWS_TO_RUN}" \
+    --latest-models-only "${LATEST_MODELS_ONLY_ARG:-true}" \
+    --results-dir "${VLLM_LLM_RESULTS_DIR}" \
+    --base-dir "${BENCH_ROOT}" \
+    --python-bin python \
+    --qserve-benchmark-script "${QSERVE_BENCHMARK_SCRIPT:-}" \
+    --vllm-qaic-dir "${VLLM_QAIC_DIR}" \
+    --server-ready-timeout-s "$((SERVER_READY_TIMEOUT_MINUTES * 60))" \
+    ${DRY_RUN_ARG:-} \
+    ${FAIL_FAST_ARG:-}
+SCRIPT
+            '''
+        }
+    }
+}
+
 pipeline {
     agent { node { label params.NODE_LABEL } }
 
@@ -86,10 +147,14 @@ pipeline {
         string(name: 'ROWS_CCL', defaultValue: 'ALL', description: 'CCL config data rows')
         string(name: 'ROWS_BLOCKING', defaultValue: 'ALL', description: 'Blocking config data rows')
         string(name: 'ROWS_DISAGG_PD', defaultValue: 'ALL', description: 'Disagg PD config data rows')
+        string(name: 'ROWS_EMBEDDING', defaultValue: 'ALL', description: 'Embedding config data rows')
+        string(name: 'ROWS_AUDIO', defaultValue: 'ALL', description: 'Audio config data rows')
         booleanParam(name: 'RUN_DEFAULT', defaultValue: true, description: 'Run default CB + subfunction LLM configs')
         booleanParam(name: 'RUN_CCL', defaultValue: true, description: 'Run CCL-enabled LLM configs')
         booleanParam(name: 'RUN_BLOCKING', defaultValue: true, description: 'Run blocking LLM configs')
         booleanParam(name: 'RUN_DISAGG_PD', defaultValue: true, description: 'Run PD disaggregated LLM configs')
+        booleanParam(name: 'RUN_EMBEDDING', defaultValue: true, description: 'Run embedding model configs')
+        booleanParam(name: 'RUN_AUDIO', defaultValue: true, description: 'Run audio model configs')
         booleanParam(name: 'SKIP_INSTALL', defaultValue: false, description: 'Reuse an already installed venv/repos in BENCH_ROOT')
         booleanParam(name: 'DRY_RUN', defaultValue: false, description: 'Only build commands/log stubs/output CSV rows')
         booleanParam(name: 'FAIL_FAST', defaultValue: false, description: 'Stop within a config after the first failing row')
@@ -107,6 +172,8 @@ pipeline {
         QAIC_DISAGG_DIR = "/efficient-transformers/vllm_llm_workspace/qaic-disagg"
         VLLM_LLM_RESULTS_DIR = "${HOME}/.cache/vllm_llm_results/${BUILD_NUMBER}"
         BENCHMARK_SCRIPT = "/efficient-transformers/tests/nightly_pipeline/vllm_llm_benchmark/vllm_llm_benchmark.py"
+        EMBEDDING_BENCHMARK_SCRIPT = "/efficient-transformers/tests/nightly_pipeline/vllm_llm_benchmark/vllm_embedding_benchmark.py"
+        AUDIO_BENCHMARK_SCRIPT = "/efficient-transformers/tests/nightly_pipeline/vllm_llm_benchmark/vllm_audio_benchmark.py"
         QEFF_HOME = "/efficient-transformers/vllm_llm_workspace/qeff_models"
         HF_HOME = "${HOME}/.cache/huggingface"
         // Intentionally NOT named HF_TOKEN: declaring HF_TOKEN itself here would force every
@@ -172,6 +239,8 @@ pipeline {
                         -e QAIC_DISAGG_DIR="${QAIC_DISAGG_DIR}" \
                         -e VLLM_LLM_RESULTS_DIR="${VLLM_LLM_RESULTS_DIR}" \
                         -e BENCHMARK_SCRIPT="${BENCHMARK_SCRIPT}" \
+                        -e EMBEDDING_BENCHMARK_SCRIPT="${EMBEDDING_BENCHMARK_SCRIPT}" \
+                        -e AUDIO_BENCHMARK_SCRIPT="${AUDIO_BENCHMARK_SCRIPT}" \
                         -e QEFF_HOME="${QEFF_HOME}" \
                         -e HF_HOME="${HF_HOME}" \
                         -e PYTHON_BIN="${PYTHON_BIN}" \
@@ -212,6 +281,8 @@ python -m pip install --upgrade pip setuptools wheel
 if [[ "${SKIP_INSTALL}" == "true" ]]; then
     echo "SKIP_INSTALL=true; reusing existing venv and repo checkouts."
     python "${BENCHMARK_SCRIPT}" --help >/dev/null
+    python "${EMBEDDING_BENCHMARK_SCRIPT}" --help >/dev/null
+    python "${AUDIO_BENCHMARK_SCRIPT}" --help >/dev/null
     exit 0
 fi
 
@@ -260,6 +331,8 @@ clone_or_update "${QAIC_DISAGG_REPO}" "${QAIC_DISAGG_DIR}" "${QAIC_DISAGG_BRANCH
 . "${VENV_DIR}/bin/activate"
 python -m pip install -e "${QAIC_DISAGG_DIR}"
 python "${BENCHMARK_SCRIPT}" --help >/dev/null
+python "${EMBEDDING_BENCHMARK_SCRIPT}" --help >/dev/null
+python "${AUDIO_BENCHMARK_SCRIPT}" --help >/dev/null
 SCRIPT
                         '''
                     }
@@ -302,6 +375,8 @@ clone_or_update "${QAIC_DISAGG_REPO}" "${QAIC_DISAGG_DIR}" "${QAIC_DISAGG_BRANCH
 . "${VENV_DIR}/bin/activate"
 python -m pip install -e "${QAIC_DISAGG_DIR}"
 python "${BENCHMARK_SCRIPT}" --help >/dev/null
+python "${EMBEDDING_BENCHMARK_SCRIPT}" --help >/dev/null
+python "${AUDIO_BENCHMARK_SCRIPT}" --help >/dev/null
 rm -f /tmp/gerrit_ssh_key
 SCRIPT
                             '''
@@ -349,6 +424,24 @@ SCRIPT
             steps {
                 script {
                     runLlmConfig('disagg_pd', params.ROWS_DISAGG_PD)
+                }
+            }
+        }
+
+        stage('Run Embedding') {
+            when { expression { params.RUN_EMBEDDING } }
+            steps {
+                script {
+                    runBenchConfig('EMBEDDING_BENCHMARK_SCRIPT', 'embedding', params.ROWS_EMBEDDING)
+                }
+            }
+        }
+
+        stage('Run Audio') {
+            when { expression { params.RUN_AUDIO } }
+            steps {
+                script {
+                    runBenchConfig('AUDIO_BENCHMARK_SCRIPT', 'audio', params.ROWS_AUDIO)
                 }
             }
         }
