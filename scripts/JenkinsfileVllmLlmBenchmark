@@ -121,6 +121,69 @@ SCRIPT
     }
 }
 
+def runVlmConfig(String rowSpec, String disaggMode, String specializationMode, String blockingMode) {
+    def dryRunArg = params.DRY_RUN ? '--dry-run' : ''
+    def failFastArg = params.FAIL_FAST ? '--fail-fast' : ''
+    def latestModelsOnlyArg = params.LATEST_MODELS_ONLY ? 'true' : 'false'
+    def inputCsv = "tests/nightly_pipeline/vllm_llm_benchmark/configs/vlm_configs.csv"
+    def outputCsv = "${env.VLLM_LLM_RESULTS_DIR}/vlm_results.csv"
+
+    catchError(buildResult: 'FAILURE', stageResult: 'FAILURE') {
+        withEnv([
+            "CONFIG_NAME=vlm",
+            "INPUT_CSV=${inputCsv}",
+            "OUTPUT_CSV=${outputCsv}",
+            "ROWS_TO_RUN=${rowSpec ?: 'ALL'}",
+            "DRY_RUN_ARG=${dryRunArg}",
+            "FAIL_FAST_ARG=${failFastArg}",
+            "LATEST_MODELS_ONLY_ARG=${latestModelsOnlyArg}",
+            "DISAGG_MODE_ARG=${disaggMode ?: 'ALL'}",
+            "SPECIALIZATION_MODE_ARG=${specializationMode ?: 'ALL'}",
+            "BLOCKING_MODE_ARG=${blockingMode ?: 'ALL'}",
+        ]) {
+            sh '''#!/bin/bash
+                set -euo pipefail
+                sudo docker exec -i \
+                    -e CONFIG_NAME="${CONFIG_NAME:-}" \
+                    -e INPUT_CSV="${INPUT_CSV:-}" \
+                    -e OUTPUT_CSV="${OUTPUT_CSV:-}" \
+                    -e ROWS_TO_RUN="${ROWS_TO_RUN:-ALL}" \
+                    -e DRY_RUN_ARG="${DRY_RUN_ARG:-}" \
+                    -e FAIL_FAST_ARG="${FAIL_FAST_ARG:-}" \
+                    -e LATEST_MODELS_ONLY_ARG="${LATEST_MODELS_ONLY_ARG:-true}" \
+                    -e DISAGG_MODE_ARG="${DISAGG_MODE_ARG:-ALL}" \
+                    -e SPECIALIZATION_MODE_ARG="${SPECIALIZATION_MODE_ARG:-ALL}" \
+                    -e BLOCKING_MODE_ARG="${BLOCKING_MODE_ARG:-ALL}" \
+                    ${BUILD_TAG} bash -s <<'SCRIPT'
+set -euo pipefail
+cd /efficient-transformers
+. "${VENV_DIR}/bin/activate"
+export PYTHONUNBUFFERED=1
+export TOKENIZERS_PARALLELISM=false
+
+python "${VLM_BENCHMARK_SCRIPT}" \
+    --config-name "${CONFIG_NAME}" \
+    --input-csv "${INPUT_CSV}" \
+    --output-csv "${OUTPUT_CSV}" \
+    --rows "${ROWS_TO_RUN}" \
+    --latest-models-only "${LATEST_MODELS_ONLY_ARG:-true}" \
+    --results-dir "${VLLM_LLM_RESULTS_DIR}" \
+    --base-dir "${BENCH_ROOT}" \
+    --python-bin python \
+    --qserve-benchmark-script "${QSERVE_BENCHMARK_SCRIPT:-}" \
+    --vllm-qaic-dir "${VLLM_QAIC_DIR}" \
+    --server-ready-timeout-s "$((SERVER_READY_TIMEOUT_MINUTES * 60))" \
+    --disagg-mode "${DISAGG_MODE_ARG:-ALL}" \
+    --specialization-mode "${SPECIALIZATION_MODE_ARG:-ALL}" \
+    --blocking-mode "${BLOCKING_MODE_ARG:-ALL}" \
+    ${DRY_RUN_ARG:-} \
+    ${FAIL_FAST_ARG:-}
+SCRIPT
+            '''
+        }
+    }
+}
+
 pipeline {
     agent { node { label params.NODE_LABEL } }
 
@@ -149,12 +212,17 @@ pipeline {
         string(name: 'ROWS_DISAGG_PD', defaultValue: 'ALL', description: 'Disagg PD config data rows')
         string(name: 'ROWS_EMBEDDING', defaultValue: 'ALL', description: 'Embedding config data rows')
         string(name: 'ROWS_AUDIO', defaultValue: 'ALL', description: 'Audio config data rows')
+        string(name: 'ROWS_VLM', defaultValue: 'ALL', description: 'VLM config data rows')
+        choice(name: 'VLM_DISAGG_MODE', choices: ['ALL', 'ED', 'PD', 'EPD'], description: 'VLM disagg layout filter: encode-decode, prefill-decode, or encode-prefill-decode')
+        choice(name: 'VLM_SPECIALIZATION_MODE', choices: ['ALL', 'single', 'multi'], description: 'VLM specialization filter: single vs multi resolution/image-count buckets')
+        choice(name: 'VLM_BLOCKING_MODE', choices: ['ALL', 'blocking', 'non_blocking'], description: 'VLM blocking filter')
         booleanParam(name: 'RUN_DEFAULT', defaultValue: true, description: 'Run default CB + subfunction LLM configs')
         booleanParam(name: 'RUN_CCL', defaultValue: true, description: 'Run CCL-enabled LLM configs')
         booleanParam(name: 'RUN_BLOCKING', defaultValue: true, description: 'Run blocking LLM configs')
         booleanParam(name: 'RUN_DISAGG_PD', defaultValue: true, description: 'Run PD disaggregated LLM configs')
         booleanParam(name: 'RUN_EMBEDDING', defaultValue: true, description: 'Run embedding model configs')
         booleanParam(name: 'RUN_AUDIO', defaultValue: true, description: 'Run audio model configs')
+        booleanParam(name: 'RUN_VLM', defaultValue: true, description: 'Run VLM model configs')
         booleanParam(name: 'SKIP_INSTALL', defaultValue: false, description: 'Reuse an already installed venv/repos in BENCH_ROOT')
         booleanParam(name: 'DRY_RUN', defaultValue: false, description: 'Only build commands/log stubs/output CSV rows')
         booleanParam(name: 'FAIL_FAST', defaultValue: false, description: 'Stop within a config after the first failing row')
@@ -174,6 +242,7 @@ pipeline {
         BENCHMARK_SCRIPT = "/efficient-transformers/tests/nightly_pipeline/vllm_llm_benchmark/vllm_llm_benchmark.py"
         EMBEDDING_BENCHMARK_SCRIPT = "/efficient-transformers/tests/nightly_pipeline/vllm_llm_benchmark/vllm_embedding_benchmark.py"
         AUDIO_BENCHMARK_SCRIPT = "/efficient-transformers/tests/nightly_pipeline/vllm_llm_benchmark/vllm_audio_benchmark.py"
+        VLM_BENCHMARK_SCRIPT = "/efficient-transformers/tests/nightly_pipeline/vllm_llm_benchmark/vllm_vlm_benchmark.py"
         QEFF_HOME = "/efficient-transformers/vllm_llm_workspace/qeff_models"
         HF_HOME = "${HOME}/.cache/huggingface"
         // Intentionally NOT named HF_TOKEN: declaring HF_TOKEN itself here would force every
@@ -241,6 +310,7 @@ pipeline {
                         -e BENCHMARK_SCRIPT="${BENCHMARK_SCRIPT}" \
                         -e EMBEDDING_BENCHMARK_SCRIPT="${EMBEDDING_BENCHMARK_SCRIPT}" \
                         -e AUDIO_BENCHMARK_SCRIPT="${AUDIO_BENCHMARK_SCRIPT}" \
+                        -e VLM_BENCHMARK_SCRIPT="${VLM_BENCHMARK_SCRIPT}" \
                         -e QEFF_HOME="${QEFF_HOME}" \
                         -e HF_HOME="${HF_HOME}" \
                         -e PYTHON_BIN="${PYTHON_BIN}" \
@@ -283,6 +353,7 @@ if [[ "${SKIP_INSTALL}" == "true" ]]; then
     python "${BENCHMARK_SCRIPT}" --help >/dev/null
     python "${EMBEDDING_BENCHMARK_SCRIPT}" --help >/dev/null
     python "${AUDIO_BENCHMARK_SCRIPT}" --help >/dev/null
+    python "${VLM_BENCHMARK_SCRIPT}" --help >/dev/null
     exit 0
 fi
 
@@ -333,6 +404,7 @@ python -m pip install -e "${QAIC_DISAGG_DIR}"
 python "${BENCHMARK_SCRIPT}" --help >/dev/null
 python "${EMBEDDING_BENCHMARK_SCRIPT}" --help >/dev/null
 python "${AUDIO_BENCHMARK_SCRIPT}" --help >/dev/null
+python "${VLM_BENCHMARK_SCRIPT}" --help >/dev/null
 SCRIPT
                         '''
                     }
@@ -377,6 +449,7 @@ python -m pip install -e "${QAIC_DISAGG_DIR}"
 python "${BENCHMARK_SCRIPT}" --help >/dev/null
 python "${EMBEDDING_BENCHMARK_SCRIPT}" --help >/dev/null
 python "${AUDIO_BENCHMARK_SCRIPT}" --help >/dev/null
+python "${VLM_BENCHMARK_SCRIPT}" --help >/dev/null
 rm -f /tmp/gerrit_ssh_key
 SCRIPT
                             '''
@@ -442,6 +515,15 @@ SCRIPT
             steps {
                 script {
                     runBenchConfig('AUDIO_BENCHMARK_SCRIPT', 'audio', params.ROWS_AUDIO)
+                }
+            }
+        }
+
+        stage('Run VLM') {
+            when { expression { params.RUN_VLM } }
+            steps {
+                script {
+                    runVlmConfig(params.ROWS_VLM, params.VLM_DISAGG_MODE, params.VLM_SPECIALIZATION_MODE, params.VLM_BLOCKING_MODE)
                 }
             }
         }

@@ -97,9 +97,11 @@ OUTPUT_FIELDS = [
     "config_summary",
     "mode_type",
     "device_group",
+    "encode_device_group",
     "prefill_device_group",
     "decode_device_group",
     "BS",
+    "VBS",
     "PBS",
     "DBS",
     "PL",
@@ -367,13 +369,22 @@ def build_disagg_server_command(row: dict, args) -> list[str]:
     cmd = [python_bin, "-m", "qaic_disagg"]
 
     add_value_arg(cmd, "--port", row, "port", "server_port")
+    add_many_token_arg(cmd, "--encode-port", row, "encode_port")
+    add_many_token_arg(cmd, "--encode-device-group", row, "encode_device_group")
     add_many_token_arg(cmd, "--decode-port", row, "decode_port")
     add_many_token_arg(cmd, "--decode-device-group", row, "decode_device_group")
     add_many_token_arg(cmd, "--prefill-port", row, "prefill_port")
     add_many_token_arg(cmd, "--prefill-device-group", row, "prefill_device_group")
     add_value_arg(cmd, "--model", row, "model")
+    add_value_arg(cmd, "--encode-max-num-seqs", row, "encode_max_num_seqs", "VBS")
     add_value_arg(cmd, "--prefill-max-num-seqs", row, "prefill_max_num_seqs", "PBS")
     add_value_arg(cmd, "--decode-max-num-seqs", row, "decode_max_num_seqs", "DBS")
+    add_value_arg(
+        cmd,
+        "--decode-long-prefill-token-threshold",
+        row,
+        "decode_long_prefill_token_threshold",
+    )
     add_value_arg(
         cmd,
         "--prefill-long-prefill-token-threshold",
@@ -387,6 +398,16 @@ def build_disagg_server_command(row: dict, args) -> list[str]:
         "prefill_max_num_batched_tokens",
     )
     add_value_arg(cmd, "--max-model-len", row, "max_model_len", "CL")
+
+    encode_override = value(row, "encode_override_qaic_config")
+    if encode_override:
+        parse_json_cell(encode_override, "encode_override_qaic_config")
+        cmd.extend(
+            [
+                "--encode-override-qaic-config",
+                compact_json(json.loads(encode_override)),
+            ]
+        )
 
     prefill_override = value(row, "prefill_override_qaic_config")
     if prefill_override:
@@ -422,6 +443,9 @@ def build_disagg_server_command(row: dict, args) -> list[str]:
     # qaic_disagg accepts the vLLM generation config spelling, but current
     # production commands use --generation_config. Preserve that convention.
     add_value_arg(cmd, "--generation_config", row, "generation_config")
+    # VLM production commands use the hyphenated vLLM spelling instead; kept as a
+    # distinct column so it never collides with the underscore LLM-PD convention above.
+    add_value_arg(cmd, "--generation-config", row, "vlm_generation_config")
     add_bool_arg(cmd, "--enable-log-requests", row, "enable_log_requests")
     add_value_arg(
         cmd,
@@ -429,6 +453,7 @@ def build_disagg_server_command(row: dict, args) -> list[str]:
         row,
         "chat_template_content_format",
     )
+    add_value_arg(cmd, "--chat-template", row, "chat_template")
     add_value_arg(cmd, "--kv-store-size", row, "kv_store_size")
     add_value_arg(cmd, "--kv-handOff-port", row, "kv_handoff_port")
     add_value_arg(cmd, "--scheduling-policy", row, "scheduling_policy")
@@ -439,7 +464,17 @@ def build_disagg_server_command(row: dict, args) -> list[str]:
         row,
         "prefill_pipeline_parallel_size",
     )
-    add_value_arg(cmd, "--proxy-workers", row, "proxy_workers")
+    add_value_arg(cmd, "--proxy-worker", row, "proxy_worker")
+
+    limit_mm_per_prompt = value(row, "limit_mm_per_prompt")
+    if limit_mm_per_prompt:
+        parse_json_cell(limit_mm_per_prompt, "limit_mm_per_prompt")
+        cmd.extend(
+            [
+                "--limit-mm-per-prompt",
+                compact_json(json.loads(limit_mm_per_prompt)),
+            ]
+        )
 
     extra_args = value(row, "server_extra_args")
     if extra_args:
@@ -485,6 +520,45 @@ def resolve_qserve_script(row: dict, args, require_exists: bool = True) -> str:
             "Set --qserve-benchmark-script or use client_type=vllm_bench."
         )
     return ""
+
+
+def add_hf_random_dataset_args(cmd: list[str], row: dict) -> None:
+    tokenizer = value(row, "tokenizer")
+    if tokenizer:
+        cmd.extend(["--tokenizer", tokenizer])
+    random_range_ratio = value(row, "random_range_ratio")
+    if random_range_ratio:
+        cmd.extend(["--random-range-ratio", random_range_ratio])
+    dataset_path = value(row, "dataset_path")
+    if dataset_path:
+        cmd.extend(["--dataset-path", dataset_path])
+    hf_subset = value(row, "hf_subset")
+    if hf_subset:
+        cmd.extend(["--hf-subset", hf_subset])
+    hf_split = value(row, "hf_split")
+    if hf_split:
+        cmd.extend(["--hf-split", hf_split])
+    hf_output_len = value(row, "hf_output_len")
+    if hf_output_len:
+        cmd.extend(["--hf-output-len", hf_output_len])
+
+
+def add_random_mm_args(cmd: list[str], row: dict) -> None:
+    base_items = value(row, "random_mm_base_items_per_request")
+    if base_items:
+        cmd.extend(["--random-mm-base-items-per-request", base_items])
+    range_ratio = value(row, "random_mm_num_mm_items_range_ratio")
+    if range_ratio:
+        cmd.extend(["--random-mm-num-mm-items-range-ratio", range_ratio])
+    limit_mm_per_prompt = value(row, "random_mm_limit_mm_per_prompt")
+    if limit_mm_per_prompt:
+        parse_json_cell(limit_mm_per_prompt, "random_mm_limit_mm_per_prompt")
+        cmd.extend(["--random-mm-limit-mm-per-prompt", compact_json(json.loads(limit_mm_per_prompt))])
+    # --random-mm-bucket-config uses a Python-tuple-keyed literal (e.g.
+    # '{(720,1080,1):1.0}'), which is not valid JSON - pass it through verbatim.
+    bucket_config = value(row, "random_mm_bucket_config")
+    if bucket_config:
+        cmd.extend(["--random-mm-bucket-config", bucket_config])
 
 
 def build_client_command(row: dict, args) -> list[str]:
@@ -535,24 +609,7 @@ def build_client_command(row: dict, args) -> list[str]:
             cmd.extend(["--endpoint", endpoint])
         if seed:
             cmd.extend(["--seed", seed])
-        tokenizer = value(row, "tokenizer")
-        if tokenizer:
-            cmd.extend(["--tokenizer", tokenizer])
-        random_range_ratio = value(row, "random_range_ratio")
-        if random_range_ratio:
-            cmd.extend(["--random-range-ratio", random_range_ratio])
-        dataset_path = value(row, "dataset_path")
-        if dataset_path:
-            cmd.extend(["--dataset-path", dataset_path])
-        hf_subset = value(row, "hf_subset")
-        if hf_subset:
-            cmd.extend(["--hf-subset", hf_subset])
-        hf_split = value(row, "hf_split")
-        if hf_split:
-            cmd.extend(["--hf-split", hf_split])
-        hf_output_len = value(row, "hf_output_len")
-        if hf_output_len:
-            cmd.extend(["--hf-output-len", hf_output_len])
+        add_hf_random_dataset_args(cmd, row)
         add_bool_arg(cmd, "--ignore-eos", row, "ignore_eos")
         add_bool_arg(cmd, "--trust-remote-code", row, "trust_remote_code")
         add_bool_arg(cmd, "--save-result", row, "save_result")
@@ -598,8 +655,13 @@ def build_client_command(row: dict, args) -> list[str]:
 
         if seed:
             cmd.extend(["--seed", seed])
+        add_hf_random_dataset_args(cmd, row)
+        add_random_mm_args(cmd, row)
         add_bool_arg(cmd, "--ignore-eos", row, "ignore_eos")
         add_bool_arg(cmd, "--trust-remote-code", row, "trust_remote_code")
+        temperature = value(row, "temperature")
+        if temperature:
+            cmd.extend(["--temperature", temperature])
         add_bool_arg(cmd, "--save-result", row, "save_result")
     else:
         raise BenchmarkError(f"unsupported client_type: {client_type}")
@@ -727,14 +789,9 @@ def launch_server(
             return server
         if process.poll() is not None:
             stream_thread.join(timeout=5)
-            raise BenchmarkError(
-                f"server exited before ready marker; returncode={process.returncode}; "
-                f"log={log_path}"
-            )
+            raise BenchmarkError(f"server exited before ready marker; returncode={process.returncode}; log={log_path}")
         if timeout_s > 0 and time.monotonic() - started_at > timeout_s:
-            raise BenchmarkError(
-                f"server did not become ready within {timeout_s}s; log={log_path}"
-            )
+            raise BenchmarkError(f"server did not become ready within {timeout_s}s; log={log_path}")
         time.sleep(1)
 
 
@@ -812,11 +869,7 @@ def parse_benchmark_output(log_path: Path) -> list[dict]:
             ("median_itl_ms", "median_itl_s"),
             ("p99_itl_ms", "p99_itl_s"),
         ]:
-            run[sec_key] = (
-                run.get(ms_key) / 1000.0
-                if run.get(ms_key) is not None
-                else None
-            )
+            run[sec_key] = run.get(ms_key) / 1000.0 if run.get(ms_key) is not None else None
         runs.append(run)
     return runs
 
@@ -830,7 +883,10 @@ def rounded(value_: object) -> object:
 def build_config_summary(row: dict) -> str:
     server_type = value(row, "server_type", default="api_server").lower()
     if server_type in {"qaic_disagg", "disagg"}:
+        vbs = value(row, "encode_max_num_seqs", "VBS")
+        vbs_part = f"VBS:{vbs} / " if vbs else ""
         return (
+            f"{vbs_part}"
             f"PBS:{value(row, 'prefill_max_num_seqs', 'PBS')} / "
             f"DBS:{value(row, 'decode_max_num_seqs', 'DBS')} / "
             f"PL:{value(row, 'input_len', 'random_input_len', 'PL')} / "
@@ -848,11 +904,12 @@ def build_config_summary(row: dict) -> str:
 def build_mode_type(row: dict) -> str:
     server_type = value(row, "server_type", default="api_server").lower()
     if server_type in {"qaic_disagg", "disagg"}:
-        pp = value(row, "prefill_pipeline_parallel_size") or device_count(
-            value(row, "prefill_device_group")
-        )
+        es = device_count(value(row, "encode_device_group"))
+        pp = value(row, "prefill_pipeline_parallel_size") or device_count(value(row, "prefill_device_group"))
         ts = device_count(value(row, "decode_device_group"))
         parts = []
+        if es:
+            parts.append(f"ES{es}")
         if pp:
             parts.append(f"PP{pp}")
         if ts:
@@ -900,9 +957,11 @@ def make_output_row(
         "config_summary": build_config_summary(row),
         "mode_type": build_mode_type(row),
         "device_group": value(row, "device_group"),
+        "encode_device_group": value(row, "encode_device_group"),
         "prefill_device_group": value(row, "prefill_device_group"),
         "decode_device_group": value(row, "decode_device_group"),
         "BS": value(row, "max_num_seqs", "BS"),
+        "VBS": value(row, "encode_max_num_seqs", "VBS"),
         "PBS": value(row, "prefill_max_num_seqs", "PBS"),
         "DBS": value(row, "decode_max_num_seqs", "DBS"),
         "PL": value(row, "input_len", "random_input_len", "PL"),
@@ -913,12 +972,8 @@ def make_output_row(
         "failed_requests": run.get("failed_requests", ""),
         "benchmark_duration_s": rounded(run.get("benchmark_duration_s", "")),
         "request_throughput_req_s": rounded(run.get("request_throughput_req_s", "")),
-        "output_token_throughput_tok_s": rounded(
-            run.get("output_token_throughput_tok_s", "")
-        ),
-        "total_token_throughput_tok_s": rounded(
-            run.get("total_token_throughput_tok_s", "")
-        ),
+        "output_token_throughput_tok_s": rounded(run.get("output_token_throughput_tok_s", "")),
+        "total_token_throughput_tok_s": rounded(run.get("total_token_throughput_tok_s", "")),
         "mean_TTFT_ms": rounded(run.get("mean_ttft_ms", "")),
         "P99_TTFT_ms": rounded(run.get("p99_ttft_ms", "")),
         "mean_TPOT_ms": rounded(run.get("mean_tpot_ms", "")),
@@ -1124,7 +1179,32 @@ def build_arg_parser(description: str) -> argparse.ArgumentParser:
         action="store_true",
         help="Stop after first failed row.",
     )
+    parser.add_argument(
+        "--disagg-mode",
+        default="ALL",
+        help="VLM only: filter rows by disagg_mode column (ED, PD, EPD, or ALL).",
+    )
+    parser.add_argument(
+        "--specialization-mode",
+        default="ALL",
+        help="VLM only: filter rows by specialization_mode column (single, multi, or ALL).",
+    )
+    parser.add_argument(
+        "--blocking-mode",
+        default="ALL",
+        help="VLM only: filter rows by blocking_mode column (blocking, non_blocking, or ALL).",
+    )
     return parser
+
+
+def row_matches_filter(row: dict, column: str, filter_value: str) -> bool:
+    filter_value = (filter_value or "ALL").strip()
+    if filter_value.upper() == "ALL":
+        return True
+    row_value = value(row, column)
+    if not row_value:
+        return True
+    return row_value.lower() == filter_value.lower()
 
 
 def run_benchmarks(args, latest_models: set[str]) -> int:
@@ -1133,6 +1213,9 @@ def run_benchmarks(args, latest_models: set[str]) -> int:
     rows = read_csv_rows(input_csv)
     selected = set(parse_rows_spec(args.rows, len(rows)))
     latest_only = parse_bool(args.latest_models_only, default=True)
+    disagg_mode = getattr(args, "disagg_mode", "ALL")
+    specialization_mode = getattr(args, "specialization_mode", "ALL")
+    blocking_mode = getattr(args, "blocking_mode", "ALL")
 
     if output_csv.exists():
         output_csv.unlink()
@@ -1147,6 +1230,18 @@ def run_benchmarks(args, latest_models: set[str]) -> int:
             continue
         if latest_only and model not in latest_models:
             print(f"Skipping row {row['_data_row']} ({model}): not in LATEST_MODELS (latest-only mode).")
+            continue
+        if not row_matches_filter(row, "disagg_mode", disagg_mode):
+            print(f"Skipping row {row['_data_row']} ({model}): disagg_mode does not match filter {disagg_mode!r}.")
+            continue
+        if not row_matches_filter(row, "specialization_mode", specialization_mode):
+            print(
+                f"Skipping row {row['_data_row']} ({model}): specialization_mode does not match "
+                f"filter {specialization_mode!r}."
+            )
+            continue
+        if not row_matches_filter(row, "blocking_mode", blocking_mode):
+            print(f"Skipping row {row['_data_row']} ({model}): blocking_mode does not match filter {blocking_mode!r}.")
             continue
         ok = run_one(row, args, args.config_name, output_csv)
         if not ok:
