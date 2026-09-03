@@ -201,6 +201,8 @@ pipeline {
         string(name: 'VLLM_QAIC_BRANCH', defaultValue: 'main', description: 'vllm-qaic branch/tag to install')
         string(name: 'QAIC_DISAGG_REPO', defaultValue: 'ssh://review.qualcomm.com:29418/qranium/qaic-disagg', description: 'qaic-disagg Gerrit SSH clone URL (internal repo, requires GERRIT_SSH_CREDENTIALS_ID)')
         string(name: 'QAIC_DISAGG_BRANCH', defaultValue: 'master', description: 'qaic-disagg branch/tag to install')
+        string(name: 'QSERVE_REPO', defaultValue: 'https://github.qualcomm.com/qranium/qserve.git', description: 'qserve git clone URL (internal repo, requires GitHub credentials)')
+        string(name: 'QSERVE_BRANCH', defaultValue: 'main', description: 'qserve branch/tag to install')
         string(name: 'GERRIT_SSH_CREDENTIALS_ID', defaultValue: 'gerrit-ssh-key', description: 'Jenkins "SSH Username with private key" credential ID for Gerrit (review.qualcomm.com) access to clone qaic-disagg. Required unless SKIP_INSTALL=true.')
         string(name: 'QEFF_BRANCH', defaultValue: 'main', description: 'efficient-transformers branch consumed by vllm-qaic scripts/install.sh aot')
         password(name: 'HF_TOKEN', defaultValue: '', description: 'HuggingFace token for gated models. Optional - leave empty to reuse the HF_TOKEN already exported in the Jenkins agent host environment.')
@@ -238,6 +240,7 @@ pipeline {
         VENV_DIR = "/efficient-transformers/vllm_llm_workspace/venv"
         VLLM_QAIC_DIR = "/efficient-transformers/vllm_llm_workspace/vllm-qaic"
         QAIC_DISAGG_DIR = "/efficient-transformers/vllm_llm_workspace/qaic-disagg"
+        QSERVE_DIR = "/efficient-transformers/vllm_llm_workspace/qserve"
         VLLM_LLM_RESULTS_DIR = "${HOME}/.cache/vllm_llm_results/${BUILD_NUMBER}"
         BENCHMARK_SCRIPT = "/efficient-transformers/tests/nightly_pipeline/vllm_llm_benchmark/vllm_llm_benchmark.py"
         EMBEDDING_BENCHMARK_SCRIPT = "/efficient-transformers/tests/nightly_pipeline/vllm_llm_benchmark/vllm_embedding_benchmark.py"
@@ -318,6 +321,9 @@ pipeline {
                         -e VLLM_QAIC_BRANCH="${VLLM_QAIC_BRANCH}" \
                         -e QAIC_DISAGG_REPO="${QAIC_DISAGG_REPO}" \
                         -e QAIC_DISAGG_BRANCH="${QAIC_DISAGG_BRANCH}" \
+                        -e QSERVE_DIR="${QSERVE_DIR}" \
+                        -e QSERVE_REPO="${QSERVE_REPO}" \
+                        -e QSERVE_BRANCH="${QSERVE_BRANCH}" \
                         -e QEFF_BRANCH="${QEFF_BRANCH}" \
                         -e SKIP_INSTALL="${SKIP_INSTALL}" \
                         -e SERVER_READY_TIMEOUT_MINUTES="${SERVER_READY_TIMEOUT_MINUTES}" \
@@ -375,6 +381,19 @@ clone_or_update "${VLLM_QAIC_REPO}" "${VLLM_QAIC_DIR}" "${VLLM_QAIC_BRANCH}"
     cd "${VLLM_QAIC_DIR}"
     QEFF_BRANCH="${QEFF_BRANCH}" scripts/install.sh aot
 )
+
+# Clone qserve repo (optional, for embedding/audio client support)
+clone_or_update "${QSERVE_REPO}" "${QSERVE_DIR}" "${QSERVE_BRANCH}" || {
+    echo "Warning: qserve clone failed; embedding/audio clients will fall back to vllm_bench"
+}
+
+# Detect qserve presence and set QSERVE_BENCHMARK_SCRIPT if found
+if [[ -f "${QSERVE_DIR}/qserve/benchmarks/benchmark_serving.py" ]]; then
+    export QSERVE_BENCHMARK_SCRIPT="${QSERVE_DIR}/qserve/benchmarks/benchmark_serving.py"
+    echo "qserve detected at: ${QSERVE_BENCHMARK_SCRIPT}"
+else
+    echo "qserve not found; embedding/audio clients will fall back to vllm_bench"
+fi
 SCRIPT
                         '''
                     }
@@ -405,6 +424,19 @@ python "${BENCHMARK_SCRIPT}" --help >/dev/null
 python "${EMBEDDING_BENCHMARK_SCRIPT}" --help >/dev/null
 python "${AUDIO_BENCHMARK_SCRIPT}" --help >/dev/null
 python "${VLM_BENCHMARK_SCRIPT}" --help >/dev/null
+
+# Clone qserve repo (optional, for embedding/audio client support)
+clone_or_update "${QSERVE_REPO}" "${QSERVE_DIR}" "${QSERVE_BRANCH}" || {
+    echo "Warning: qserve clone failed; embedding/audio clients will fall back to vllm_bench"
+}
+
+# Detect qserve presence and set QSERVE_BENCHMARK_SCRIPT if found
+if [[ -f "${QSERVE_DIR}/qserve/benchmarks/benchmark_serving.py" ]]; then
+    export QSERVE_BENCHMARK_SCRIPT="${QSERVE_DIR}/qserve/benchmarks/benchmark_serving.py"
+    echo "qserve detected at: ${QSERVE_BENCHMARK_SCRIPT}"
+else
+    echo "qserve not found; embedding/audio clients will fall back to vllm_bench"
+fi
 SCRIPT
                         '''
                     }
@@ -450,6 +482,19 @@ python "${BENCHMARK_SCRIPT}" --help >/dev/null
 python "${EMBEDDING_BENCHMARK_SCRIPT}" --help >/dev/null
 python "${AUDIO_BENCHMARK_SCRIPT}" --help >/dev/null
 python "${VLM_BENCHMARK_SCRIPT}" --help >/dev/null
+
+# Clone qserve repo (optional, for embedding/audio client support)
+clone_or_update "${QSERVE_REPO}" "${QSERVE_DIR}" "${QSERVE_BRANCH}" || {
+    echo "Warning: qserve clone failed; embedding/audio clients will fall back to vllm_bench"
+}
+
+# Detect qserve presence and set QSERVE_BENCHMARK_SCRIPT if found
+if [[ -f "${QSERVE_DIR}/qserve/benchmarks/benchmark_serving.py" ]]; then
+    export QSERVE_BENCHMARK_SCRIPT="${QSERVE_DIR}/qserve/benchmarks/benchmark_serving.py"
+    echo "qserve detected at: ${QSERVE_BENCHMARK_SCRIPT}"
+else
+    echo "qserve not found; embedding/audio clients will fall back to vllm_bench"
+fi
 rm -f /tmp/gerrit_ssh_key
 SCRIPT
                             '''

@@ -350,6 +350,11 @@ def build_api_server_command(row: dict, args) -> list[str]:
     if additional_config:
         cmd.extend(["--additional-config", additional_config])
 
+    pooler_config = value(row, "pooler_config")
+    if pooler_config:
+        parse_json_cell(pooler_config, "pooler_config")
+        cmd.extend(["--pooler-config", compact_json(json.loads(pooler_config))])
+
     extra_args = value(row, "server_extra_args")
     if extra_args:
         cmd.extend(shlex.split(extra_args))
@@ -497,6 +502,11 @@ def resolve_qserve_script(row: dict, args, require_exists: bool = True) -> str:
         args.qserve_benchmark_script,
         os.environ.get("QSERVE_BENCHMARK_SCRIPT", ""),
     ]
+    # Check dedicated QSERVE_DIR first (Jenkins clones qserve to a separate directory)
+    qserve_dir = os.environ.get("QSERVE_DIR", "")
+    if qserve_dir:
+        candidates.append(str(Path(qserve_dir) / "qserve/benchmarks/benchmark_serving.py"))
+    # Also check inside vllm-qaic (legacy fallback)
     vllm_dir = Path(args.vllm_qaic_dir) if args.vllm_qaic_dir else None
     if vllm_dir:
         candidates.append(str(vllm_dir / "qserve/qserve/benchmarks/benchmark_serving.py"))
