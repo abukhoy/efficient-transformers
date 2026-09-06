@@ -357,6 +357,7 @@ python -m pip install --upgrade pip setuptools wheel
 
 if [[ "${SKIP_INSTALL}" == "true" ]]; then
     echo "SKIP_INSTALL=true; reusing existing venv and repo checkouts."
+    . "${VENV_DIR}/bin/activate"
     python "${BENCHMARK_SCRIPT}" --help >/dev/null
     python "${EMBEDDING_BENCHMARK_SCRIPT}" --help >/dev/null
     python "${AUDIO_BENCHMARK_SCRIPT}" --help >/dev/null
@@ -406,6 +407,12 @@ clone_or_update() {
         git clone --branch "${branch}" "${repo}" "${dest}"
     fi
 }
+
+clone_or_update "${VLLM_QAIC_REPO}" "${VLLM_QAIC_DIR}" "${VLLM_QAIC_BRANCH}"
+(
+    cd "${VLLM_QAIC_DIR}"
+    QEFF_BRANCH="${QEFF_BRANCH}" scripts/install.sh aot
+)
 
 clone_or_update "${QAIC_DISAGG_REPO}" "${QAIC_DISAGG_DIR}" "${QAIC_DISAGG_BRANCH}"
 . "${VENV_DIR}/bin/activate"
