@@ -384,21 +384,10 @@ clone_or_update "${VLLM_QAIC_REPO}" "${VLLM_QAIC_DIR}" "${VLLM_QAIC_BRANCH}"
 )
 
 # Clone qserve repo (optional, for embedding/audio client support)
-# Note: qserve is an internal Qualcomm repo; clone may fail if SSH key not configured
-# If clone fails, embedding/audio clients will gracefully fall back to vllm_bench
-if clone_or_update "${QSERVE_REPO}" "${QSERVE_DIR}" "${QSERVE_BRANCH}" 2>&1; then
-    echo "qserve cloned successfully"
-else
-    echo "Warning: qserve clone failed (SSH key may not be configured); embedding/audio clients will fall back to vllm_bench"
-fi
-
-# Detect qserve presence and set QSERVE_BENCHMARK_SCRIPT if found
-if [[ -f "${QSERVE_DIR}/qserve/benchmarks/benchmark_serving.py" ]]; then
-    export QSERVE_BENCHMARK_SCRIPT="${QSERVE_DIR}/qserve/benchmarks/benchmark_serving.py"
-    echo "qserve detected at: ${QSERVE_BENCHMARK_SCRIPT}"
-else
-    echo "qserve not found; embedding/audio clients will fall back to vllm_bench"
-fi
+# Note: qserve is an internal Qualcomm repo; requires SSH credentials (GERRIT_SSH_CREDENTIALS_ID)
+# Skipping in this branch since SSH credentials are not available
+# If qserve is not cloned, embedding/audio clients will gracefully fall back to vllm_bench
+echo "Skipping qserve clone (SSH credentials not available in this branch)"
 SCRIPT
                         '''
                     }
@@ -431,21 +420,10 @@ python "${AUDIO_BENCHMARK_SCRIPT}" --help >/dev/null
 python "${VLM_BENCHMARK_SCRIPT}" --help >/dev/null
 
 # Clone qserve repo (optional, for embedding/audio client support)
-# Note: qserve is an internal Qualcomm repo; clone may fail if SSH key not configured
-# If clone fails, embedding/audio clients will gracefully fall back to vllm_bench
-if clone_or_update "${QSERVE_REPO}" "${QSERVE_DIR}" "${QSERVE_BRANCH}" 2>&1; then
-    echo "qserve cloned successfully"
-else
-    echo "Warning: qserve clone failed (SSH key may not be configured); embedding/audio clients will fall back to vllm_bench"
-fi
-
-# Detect qserve presence and set QSERVE_BENCHMARK_SCRIPT if found
-if [[ -f "${QSERVE_DIR}/qserve/benchmarks/benchmark_serving.py" ]]; then
-    export QSERVE_BENCHMARK_SCRIPT="${QSERVE_DIR}/qserve/benchmarks/benchmark_serving.py"
-    echo "qserve detected at: ${QSERVE_BENCHMARK_SCRIPT}"
-else
-    echo "qserve not found; embedding/audio clients will fall back to vllm_bench"
-fi
+# Note: qserve is an internal Qualcomm repo; requires SSH credentials (GERRIT_SSH_CREDENTIALS_ID)
+# Skipping in this branch since SSH credentials are not available
+# If qserve is not cloned, embedding/audio clients will gracefully fall back to vllm_bench
+echo "Skipping qserve clone (SSH credentials not available in this branch)"
 SCRIPT
                         '''
                     }
