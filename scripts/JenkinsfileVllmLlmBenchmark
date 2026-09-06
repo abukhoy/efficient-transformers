@@ -495,15 +495,6 @@ export GIT_SSH_COMMAND="ssh -F ~/.ssh/config"
 ssh-keyscan -p 29418 review.qualcomm.com >> ~/.ssh/known_hosts 2>/dev/null || true
 ssh-keyscan github.qualcomm.com >> ~/.ssh/known_hosts 2>/dev/null || true
 
-# Test SSH key access to both hosts
-echo "Testing SSH key access..."
-echo "Testing Gerrit access:"
-ssh -v -F ~/.ssh/config review.qualcomm.com -p 29418 2>&1 | grep -E "(identity|Offering|Authentications)" || true
-echo ""
-echo "Testing GitHub access:"
-ssh -v -F ~/.ssh/config github.qualcomm.com 2>&1 | grep -E "(identity|Offering|Authentications)" || true
-echo ""
-
 clone_or_update() {
     local repo="$1"
     local dest="$2"
