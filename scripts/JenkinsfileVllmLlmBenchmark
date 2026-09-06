@@ -378,10 +378,6 @@ clone_or_update() {
 }
 
 clone_or_update "${VLLM_QAIC_REPO}" "${VLLM_QAIC_DIR}" "${VLLM_QAIC_BRANCH}"
-(
-    cd "${VLLM_QAIC_DIR}"
-    QEFF_BRANCH="${QEFF_BRANCH}" scripts/install.sh aot
-)
 
 # Clone qserve repo (optional, for embedding/audio client support)
 # Note: qserve is an internal Qualcomm repo; requires SSH credentials (GERRIT_SSH_CREDENTIALS_ID)
@@ -444,15 +440,10 @@ SCRIPT
                             prepareSh()
                             sh '''#!/bin/bash
                                 set -euo pipefail
-                                echo "Copying SSH keys into container..."
                                 sudo docker cp "${GERRIT_SSH_KEY}" ${BUILD_TAG}:/tmp/gerrit_ssh_key
                                 sudo docker cp "${GITHUB_SSH_KEY}" ${BUILD_TAG}:/tmp/github_ssh_key
-                                echo "Setting SSH key permissions..."
                                 sudo docker exec ${BUILD_TAG} chmod 600 /tmp/gerrit_ssh_key /tmp/github_ssh_key
                                 sudo docker exec ${BUILD_TAG} chown root:root /tmp/gerrit_ssh_key /tmp/github_ssh_key
-                                echo "Verifying SSH keys are present in container..."
-                                sudo docker exec ${BUILD_TAG} ls -lh /tmp/gerrit_ssh_key /tmp/github_ssh_key
-                                echo "SSH keys copied successfully"
                                 sudo docker exec -e GERRIT_SSH_KEY=/tmp/gerrit_ssh_key -e GERRIT_SSH_USER="${GERRIT_SSH_USER}" -e GITHUB_SSH_KEY=/tmp/github_ssh_key -e GITHUB_SSH_USER="${GITHUB_SSH_USER}" -i ${BUILD_TAG} bash -s <<'SCRIPT'
 set -euo pipefail
 
@@ -477,16 +468,6 @@ Host github.qualcomm.com
     UserKnownHostsFile /dev/null
 EOF
 chmod 600 ~/.ssh/config
-
-echo "=== SSH Configuration ==="
-echo "SSH config file:"
-cat ~/.ssh/config
-echo ""
-echo "Verifying SSH key files exist:"
-ls -lh ${GERRIT_SSH_KEY} ${GITHUB_SSH_KEY}
-echo ""
-echo "SSH config ready for git operations"
-echo "=== End SSH Configuration ==="
 
 # Use SSH config for all git operations
 export GIT_SSH_COMMAND="ssh -F ~/.ssh/config"
