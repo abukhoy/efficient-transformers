@@ -411,7 +411,8 @@ clone_or_update() {
 clone_or_update "${VLLM_QAIC_REPO}" "${VLLM_QAIC_DIR}" "${VLLM_QAIC_BRANCH}"
 (
     cd "${VLLM_QAIC_DIR}"
-    QEFF_BRANCH="${QEFF_BRANCH}" scripts/install.sh aot
+    # Use the Python 3.12 venv for vllm-qaic installation
+    PYTHON_BIN="${PYTHON_BIN}" VENV_DIR="${VENV_DIR}" QEFF_BRANCH="${QEFF_BRANCH}" scripts/install.sh aot
 )
 
 clone_or_update "${QAIC_DISAGG_REPO}" "${QAIC_DISAGG_DIR}" "${QAIC_DISAGG_BRANCH}"
@@ -512,7 +513,8 @@ fi
 clone_or_update "${VLLM_QAIC_REPO}" "${VLLM_QAIC_DIR}" "${VLLM_QAIC_BRANCH}"
 (
     cd "${VLLM_QAIC_DIR}"
-    QEFF_BRANCH="${QEFF_BRANCH}" scripts/install.sh aot
+    # Use the Python 3.12 venv for vllm-qaic installation
+    PYTHON_BIN="${PYTHON_BIN}" VENV_DIR="${VENV_DIR}" QEFF_BRANCH="${QEFF_BRANCH}" scripts/install.sh aot
 )
 
 . "${VENV_DIR}/bin/activate"
