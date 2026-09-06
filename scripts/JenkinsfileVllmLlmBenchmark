@@ -201,9 +201,10 @@ pipeline {
         string(name: 'VLLM_QAIC_BRANCH', defaultValue: 'main', description: 'vllm-qaic branch/tag to install')
         string(name: 'QAIC_DISAGG_REPO', defaultValue: 'ssh://review.qualcomm.com:29418/qranium/qaic-disagg', description: 'qaic-disagg Gerrit SSH clone URL (internal repo, requires GERRIT_SSH_CREDENTIALS_ID)')
         string(name: 'QAIC_DISAGG_BRANCH', defaultValue: 'master', description: 'qaic-disagg branch/tag to install')
-        string(name: 'QSERVE_REPO', defaultValue: 'https://github.qualcomm.com/qranium/qserve.git', description: 'qserve git clone URL (internal repo, requires GitHub credentials)')
+        string(name: 'QSERVE_REPO', defaultValue: 'ssh://github.qualcomm.com/qranium/qserve.git', description: 'qserve git clone URL (internal repo, requires GITHUB_SSH_CREDENTIALS_ID)')
         string(name: 'QSERVE_BRANCH', defaultValue: 'main', description: 'qserve branch/tag to install')
-        string(name: 'GERRIT_SSH_CREDENTIALS_ID', defaultValue: 'gerrit-ssh-key', description: 'Jenkins "SSH Username with private key" credential ID for Gerrit (review.qualcomm.com) access to clone qaic-disagg. Required unless SKIP_INSTALL=true.')
+        string(name: 'GERRIT_SSH_CREDENTIALS_ID', defaultValue: 'gerrit-ssh-key', description: 'Jenkins "SSH Username with private key" credential ID for Gerrit (review.qualcomm.com:29418) access to clone qaic-disagg. Required unless SKIP_INSTALL=true.')
+        string(name: 'GITHUB_SSH_CREDENTIALS_ID', defaultValue: 'github-ssh-key', description: 'Jenkins "SSH Username with private key" credential ID for GitHub Enterprise (github.qualcomm.com) access to clone qserve. Required unless SKIP_INSTALL=true.')
         string(name: 'QEFF_BRANCH', defaultValue: 'main', description: 'efficient-transformers branch consumed by vllm-qaic scripts/install.sh aot')
         password(name: 'HF_TOKEN', defaultValue: '', description: 'HuggingFace token for gated models. Optional - leave empty to reuse the HF_TOKEN already exported in the Jenkins agent host environment.')
         string(name: 'QSERVE_BENCHMARK_SCRIPT', defaultValue: '', description: 'Optional benchmark_serving.py path. Empty uses auto/fallback.')
@@ -383,9 +384,13 @@ clone_or_update "${VLLM_QAIC_REPO}" "${VLLM_QAIC_DIR}" "${VLLM_QAIC_BRANCH}"
 )
 
 # Clone qserve repo (optional, for embedding/audio client support)
-clone_or_update "${QSERVE_REPO}" "${QSERVE_DIR}" "${QSERVE_BRANCH}" || {
-    echo "Warning: qserve clone failed; embedding/audio clients will fall back to vllm_bench"
-}
+# Note: qserve is an internal Qualcomm repo; clone may fail if SSH key not configured
+# If clone fails, embedding/audio clients will gracefully fall back to vllm_bench
+if clone_or_update "${QSERVE_REPO}" "${QSERVE_DIR}" "${QSERVE_BRANCH}" 2>&1; then
+    echo "qserve cloned successfully"
+else
+    echo "Warning: qserve clone failed (SSH key may not be configured); embedding/audio clients will fall back to vllm_bench"
+fi
 
 # Detect qserve presence and set QSERVE_BENCHMARK_SCRIPT if found
 if [[ -f "${QSERVE_DIR}/qserve/benchmarks/benchmark_serving.py" ]]; then
@@ -426,9 +431,13 @@ python "${AUDIO_BENCHMARK_SCRIPT}" --help >/dev/null
 python "${VLM_BENCHMARK_SCRIPT}" --help >/dev/null
 
 # Clone qserve repo (optional, for embedding/audio client support)
-clone_or_update "${QSERVE_REPO}" "${QSERVE_DIR}" "${QSERVE_BRANCH}" || {
-    echo "Warning: qserve clone failed; embedding/audio clients will fall back to vllm_bench"
-}
+# Note: qserve is an internal Qualcomm repo; clone may fail if SSH key not configured
+# If clone fails, embedding/audio clients will gracefully fall back to vllm_bench
+if clone_or_update "${QSERVE_REPO}" "${QSERVE_DIR}" "${QSERVE_BRANCH}" 2>&1; then
+    echo "qserve cloned successfully"
+else
+    echo "Warning: qserve clone failed (SSH key may not be configured); embedding/audio clients will fall back to vllm_bench"
+fi
 
 # Detect qserve presence and set QSERVE_BENCHMARK_SCRIPT if found
 if [[ -f "${QSERVE_DIR}/qserve/benchmarks/benchmark_serving.py" ]]; then
@@ -442,25 +451,47 @@ SCRIPT
                     }
 
                     if (!params.SKIP_INSTALL && params.GERRIT_SSH_CREDENTIALS_ID?.trim()) {
-                        withCredentials([sshUserPrivateKey(
-                            credentialsId: params.GERRIT_SSH_CREDENTIALS_ID,
-                            keyFileVariable: 'GERRIT_SSH_KEY',
-                            usernameVariable: 'GERRIT_SSH_USER'
-                        )]) {
+                        withCredentials([
+                            sshUserPrivateKey(
+                                credentialsId: params.GERRIT_SSH_CREDENTIALS_ID,
+                                keyFileVariable: 'GERRIT_SSH_KEY',
+                                usernameVariable: 'GERRIT_SSH_USER'
+                            ),
+                            sshUserPrivateKey(
+                                credentialsId: params.GITHUB_SSH_CREDENTIALS_ID,
+                                keyFileVariable: 'GITHUB_SSH_KEY',
+                                usernameVariable: 'GITHUB_SSH_USER'
+                            )
+                        ]) {
                             prepareSh()
-                            // GERRIT_SSH_KEY/GERRIT_SSH_USER here are host-side env vars set by
-                            // withCredentials. They are expanded by the host shell below (this
-                            // outer sh block is NOT the quoted heredoc, so normal shell expansion
-                            // applies), then re-supplied to the container's environment explicitly
-                            // via `docker exec -e`, since docker exec does not inherit the host shell's
-                            // environment on its own.
                             sh '''#!/bin/bash
                                 set -euo pipefail
                                 sudo docker cp "${GERRIT_SSH_KEY}" ${BUILD_TAG}:/tmp/gerrit_ssh_key
-                                sudo docker exec ${BUILD_TAG} chmod 600 /tmp/gerrit_ssh_key
-                                sudo docker exec -e GERRIT_SSH_KEY=/tmp/gerrit_ssh_key -e GERRIT_SSH_USER="${GERRIT_SSH_USER}" -i ${BUILD_TAG} bash -s <<'SCRIPT'
+                                sudo docker cp "${GITHUB_SSH_KEY}" ${BUILD_TAG}:/tmp/github_ssh_key
+                                sudo docker exec ${BUILD_TAG} chmod 600 /tmp/gerrit_ssh_key /tmp/github_ssh_key
+                                sudo docker exec -e GERRIT_SSH_KEY=/tmp/gerrit_ssh_key -e GERRIT_SSH_USER="${GERRIT_SSH_USER}" -e GITHUB_SSH_KEY=/tmp/github_ssh_key -e GITHUB_SSH_USER="${GITHUB_SSH_USER}" -i ${BUILD_TAG} bash -s <<'SCRIPT'
 set -euo pipefail
-export GIT_SSH_COMMAND="ssh -F /dev/null -i ${GERRIT_SSH_KEY} -l ${GERRIT_SSH_USER} -p 29418 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+
+# Create SSH config for Gerrit (review.qualcomm.com:29418)
+mkdir -p ~/.ssh
+cat > ~/.ssh/config <<'SSHCONFIG'
+Host review.qualcomm.com
+    HostName review.qualcomm.com
+    Port 29418
+    User ${GERRIT_SSH_USER}
+    IdentityFile ${GERRIT_SSH_KEY}
+    StrictHostKeyChecking no
+    UserKnownHostsFile /dev/null
+
+Host github.qualcomm.com
+    HostName github.qualcomm.com
+    Port 22
+    User ${GITHUB_SSH_USER}
+    IdentityFile ${GITHUB_SSH_KEY}
+    StrictHostKeyChecking no
+    UserKnownHostsFile /dev/null
+SSHCONFIG
+chmod 600 ~/.ssh/config
 
 clone_or_update() {
     local repo="$1"
@@ -484,9 +515,13 @@ python "${AUDIO_BENCHMARK_SCRIPT}" --help >/dev/null
 python "${VLM_BENCHMARK_SCRIPT}" --help >/dev/null
 
 # Clone qserve repo (optional, for embedding/audio client support)
-clone_or_update "${QSERVE_REPO}" "${QSERVE_DIR}" "${QSERVE_BRANCH}" || {
-    echo "Warning: qserve clone failed; embedding/audio clients will fall back to vllm_bench"
-}
+# Note: qserve is an internal Qualcomm repo; clone may fail if SSH key not configured
+# If clone fails, embedding/audio clients will gracefully fall back to vllm_bench
+if clone_or_update "${QSERVE_REPO}" "${QSERVE_DIR}" "${QSERVE_BRANCH}" 2>&1; then
+    echo "qserve cloned successfully"
+else
+    echo "Warning: qserve clone failed (SSH key may not be configured); embedding/audio clients will fall back to vllm_bench"
+fi
 
 # Detect qserve presence and set QSERVE_BENCHMARK_SCRIPT if found
 if [[ -f "${QSERVE_DIR}/qserve/benchmarks/benchmark_serving.py" ]]; then
@@ -495,10 +530,10 @@ if [[ -f "${QSERVE_DIR}/qserve/benchmarks/benchmark_serving.py" ]]; then
 else
     echo "qserve not found; embedding/audio clients will fall back to vllm_bench"
 fi
-rm -f /tmp/gerrit_ssh_key
+rm -f /tmp/gerrit_ssh_key /tmp/github_ssh_key ~/.ssh/config
 SCRIPT
                             '''
-                            sh 'sudo docker exec ${BUILD_TAG} rm -f /tmp/gerrit_ssh_key || true'
+                            sh 'sudo docker exec ${BUILD_TAG} rm -f /tmp/gerrit_ssh_key /tmp/github_ssh_key ~/.ssh/config || true'
                         }
                     } else {
                         prepareSh()
