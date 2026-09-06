@@ -201,7 +201,7 @@ pipeline {
         string(name: 'VLLM_QAIC_BRANCH', defaultValue: 'main', description: 'vllm-qaic branch/tag to install')
         string(name: 'QAIC_DISAGG_REPO', defaultValue: 'ssh://review.qualcomm.com:29418/qranium/qaic-disagg', description: 'qaic-disagg Gerrit SSH clone URL (internal repo, requires GERRIT_SSH_CREDENTIALS_ID)')
         string(name: 'QAIC_DISAGG_BRANCH', defaultValue: 'master', description: 'qaic-disagg branch/tag to install')
-        string(name: 'QSERVE_REPO', defaultValue: 'ssh://git@github.qualcomm.com/qranium/qserve.git', description: 'qserve git clone URL (internal repo, requires GITHUB_SSH_CREDENTIALS_ID)')
+        string(name: 'QSERVE_REPO', defaultValue: 'ssh://git@github.qualcomm.com/abukhoye/qserve.git', description: 'qserve git clone URL (internal repo, requires GITHUB_SSH_CREDENTIALS_ID)')
         string(name: 'QSERVE_BRANCH', defaultValue: 'main', description: 'qserve branch/tag to install')
         string(name: 'GERRIT_SSH_CREDENTIALS_ID', defaultValue: 'gerrit-ssh-key', description: 'Jenkins "SSH Username with private key" credential ID for Gerrit (review.qualcomm.com:29418) access to clone qaic-disagg. Required unless SKIP_INSTALL=true.')
         string(name: 'GITHUB_SSH_CREDENTIALS_ID', defaultValue: 'github-ssh-key', description: 'Jenkins "SSH Username with private key" credential ID for GitHub Enterprise (github.qualcomm.com) access to clone qserve. Required unless SKIP_INSTALL=true.')
@@ -449,6 +449,7 @@ SCRIPT
                                 sudo docker cp "${GITHUB_SSH_KEY}" ${BUILD_TAG}:/tmp/github_ssh_key
                                 echo "Setting SSH key permissions..."
                                 sudo docker exec ${BUILD_TAG} chmod 600 /tmp/gerrit_ssh_key /tmp/github_ssh_key
+                                sudo docker exec ${BUILD_TAG} chown root:root /tmp/gerrit_ssh_key /tmp/github_ssh_key
                                 echo "Verifying SSH keys are present in container..."
                                 sudo docker exec ${BUILD_TAG} ls -lh /tmp/gerrit_ssh_key /tmp/github_ssh_key
                                 echo "SSH keys copied successfully"
@@ -493,6 +494,15 @@ export GIT_SSH_COMMAND="ssh -F ~/.ssh/config"
 # Pre-accept host keys to avoid "Host key verification failed" errors
 ssh-keyscan -p 29418 review.qualcomm.com >> ~/.ssh/known_hosts 2>/dev/null || true
 ssh-keyscan github.qualcomm.com >> ~/.ssh/known_hosts 2>/dev/null || true
+
+# Test SSH key access to both hosts
+echo "Testing SSH key access..."
+echo "Testing Gerrit access:"
+ssh -v -F ~/.ssh/config review.qualcomm.com -p 29418 2>&1 | grep -E "(identity|Offering|Authentications)" || true
+echo ""
+echo "Testing GitHub access:"
+ssh -v -F ~/.ssh/config github.qualcomm.com 2>&1 | grep -E "(identity|Offering|Authentications)" || true
+echo ""
 
 clone_or_update() {
     local repo="$1"
