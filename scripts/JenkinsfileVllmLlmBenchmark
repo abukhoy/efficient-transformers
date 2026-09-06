@@ -444,9 +444,14 @@ SCRIPT
                             prepareSh()
                             sh '''#!/bin/bash
                                 set -euo pipefail
+                                echo "Copying SSH keys into container..."
                                 sudo docker cp "${GERRIT_SSH_KEY}" ${BUILD_TAG}:/tmp/gerrit_ssh_key
                                 sudo docker cp "${GITHUB_SSH_KEY}" ${BUILD_TAG}:/tmp/github_ssh_key
+                                echo "Setting SSH key permissions..."
                                 sudo docker exec ${BUILD_TAG} chmod 600 /tmp/gerrit_ssh_key /tmp/github_ssh_key
+                                echo "Verifying SSH keys are present in container..."
+                                sudo docker exec ${BUILD_TAG} ls -lh /tmp/gerrit_ssh_key /tmp/github_ssh_key
+                                echo "SSH keys copied successfully"
                                 sudo docker exec -e GERRIT_SSH_KEY=/tmp/gerrit_ssh_key -e GERRIT_SSH_USER="${GERRIT_SSH_USER}" -e GITHUB_SSH_KEY=/tmp/github_ssh_key -e GITHUB_SSH_USER="${GITHUB_SSH_USER}" -i ${BUILD_TAG} bash -s <<'SCRIPT'
 set -euo pipefail
 
@@ -472,23 +477,22 @@ Host github.qualcomm.com
 EOF
 chmod 600 ~/.ssh/config
 
-echo "SSH config created:"
+echo "=== SSH Configuration ==="
+echo "SSH config file:"
 cat ~/.ssh/config
-echo "---"
+echo ""
+echo "Verifying SSH key files exist:"
+ls -lh ${GERRIT_SSH_KEY} ${GITHUB_SSH_KEY}
+echo ""
+echo "SSH config ready for git operations"
+echo "=== End SSH Configuration ==="
 
 # Use SSH config for all git operations
 export GIT_SSH_COMMAND="ssh -F ~/.ssh/config"
-echo "GIT_SSH_COMMAND: ${GIT_SSH_COMMAND}"
 
 # Pre-accept host keys to avoid "Host key verification failed" errors
 ssh-keyscan -p 29418 review.qualcomm.com >> ~/.ssh/known_hosts 2>/dev/null || true
 ssh-keyscan github.qualcomm.com >> ~/.ssh/known_hosts 2>/dev/null || true
-
-# Test SSH connections
-echo "Testing Gerrit SSH connection..."
-ssh -F ~/.ssh/config review.qualcomm.com -p 29418 "echo 'Gerrit SSH OK'" || echo "Gerrit SSH test failed (may be expected if key not authorized)"
-echo "Testing GitHub SSH connection..."
-ssh -F ~/.ssh/config github.qualcomm.com "echo 'GitHub SSH OK'" || echo "GitHub SSH test failed (may be expected if key not authorized)"
 
 clone_or_update() {
     local repo="$1"
@@ -503,15 +507,10 @@ clone_or_update() {
     fi
 }
 
+# Clone qaic-disagg first
 clone_or_update "${QAIC_DISAGG_REPO}" "${QAIC_DISAGG_DIR}" "${QAIC_DISAGG_BRANCH}"
-. "${VENV_DIR}/bin/activate"
-python -m pip install -e "${QAIC_DISAGG_DIR}"
-python "${BENCHMARK_SCRIPT}" --help >/dev/null
-python "${EMBEDDING_BENCHMARK_SCRIPT}" --help >/dev/null
-python "${AUDIO_BENCHMARK_SCRIPT}" --help >/dev/null
-python "${VLM_BENCHMARK_SCRIPT}" --help >/dev/null
 
-# Clone qserve repo (optional, for embedding/audio client support)
+# Clone qserve second (optional, for embedding/audio client support)
 # Note: qserve is an internal Qualcomm repo; clone may fail if SSH key not configured
 # If clone fails, embedding/audio clients will gracefully fall back to vllm_bench
 if clone_or_update "${QSERVE_REPO}" "${QSERVE_DIR}" "${QSERVE_BRANCH}" 2>&1; then
@@ -519,6 +518,20 @@ if clone_or_update "${QSERVE_REPO}" "${QSERVE_DIR}" "${QSERVE_BRANCH}" 2>&1; the
 else
     echo "Warning: qserve clone failed (SSH key may not be configured); embedding/audio clients will fall back to vllm_bench"
 fi
+
+# Clone vllm-qaic third
+clone_or_update "${VLLM_QAIC_REPO}" "${VLLM_QAIC_DIR}" "${VLLM_QAIC_BRANCH}"
+(
+    cd "${VLLM_QAIC_DIR}"
+    QEFF_BRANCH="${QEFF_BRANCH}" scripts/install.sh aot
+)
+
+. "${VENV_DIR}/bin/activate"
+python -m pip install -e "${QAIC_DISAGG_DIR}"
+python "${BENCHMARK_SCRIPT}" --help >/dev/null
+python "${EMBEDDING_BENCHMARK_SCRIPT}" --help >/dev/null
+python "${AUDIO_BENCHMARK_SCRIPT}" --help >/dev/null
+python "${VLM_BENCHMARK_SCRIPT}" --help >/dev/null
 
 # Detect qserve presence and set QSERVE_BENCHMARK_SCRIPT if found
 if [[ -f "${QSERVE_DIR}/qserve/benchmarks/benchmark_serving.py" ]]; then
