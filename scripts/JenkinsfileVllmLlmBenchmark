@@ -472,9 +472,10 @@ SCRIPT
                                 sudo docker exec -e GERRIT_SSH_KEY=/tmp/gerrit_ssh_key -e GERRIT_SSH_USER="${GERRIT_SSH_USER}" -e GITHUB_SSH_KEY=/tmp/github_ssh_key -e GITHUB_SSH_USER="${GITHUB_SSH_USER}" -i ${BUILD_TAG} bash -s <<'SCRIPT'
 set -euo pipefail
 
-# Create SSH config for Gerrit (review.qualcomm.com:29418)
+# Create SSH config for both Gerrit and GitHub Enterprise
+# Note: variables are already expanded by the outer shell via docker exec -e
 mkdir -p ~/.ssh
-cat > ~/.ssh/config <<'SSHCONFIG'
+cat > ~/.ssh/config <<EOF
 Host review.qualcomm.com
     HostName review.qualcomm.com
     Port 29418
@@ -490,11 +491,26 @@ Host github.qualcomm.com
     IdentityFile ${GITHUB_SSH_KEY}
     StrictHostKeyChecking no
     UserKnownHostsFile /dev/null
-SSHCONFIG
+EOF
 chmod 600 ~/.ssh/config
+
+echo "SSH config created:"
+cat ~/.ssh/config
+echo "---"
 
 # Use SSH config for all git operations
 export GIT_SSH_COMMAND="ssh -F ~/.ssh/config"
+echo "GIT_SSH_COMMAND: ${GIT_SSH_COMMAND}"
+
+# Pre-accept host keys to avoid "Host key verification failed" errors
+ssh-keyscan -p 29418 review.qualcomm.com >> ~/.ssh/known_hosts 2>/dev/null || true
+ssh-keyscan github.qualcomm.com >> ~/.ssh/known_hosts 2>/dev/null || true
+
+# Test SSH connections
+echo "Testing Gerrit SSH connection..."
+ssh -F ~/.ssh/config review.qualcomm.com -p 29418 "echo 'Gerrit SSH OK'" || echo "Gerrit SSH test failed (may be expected if key not authorized)"
+echo "Testing GitHub SSH connection..."
+ssh -F ~/.ssh/config github.qualcomm.com "echo 'GitHub SSH OK'" || echo "GitHub SSH test failed (may be expected if key not authorized)"
 
 clone_or_update() {
     local repo="$1"
