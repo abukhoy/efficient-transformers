@@ -404,33 +404,57 @@ def build_disagg_server_command(row: dict, args) -> list[str]:
     )
     add_value_arg(cmd, "--max-model-len", row, "max_model_len", "CL")
 
+    enable_blocking = parse_bool(value(row, "enable_blocking", default="true"))
+    enable_ccl = parse_bool(value(row, "enable_ccl", default="true"))
+
     encode_override = value(row, "encode_override_qaic_config")
     if encode_override:
         parse_json_cell(encode_override, "encode_override_qaic_config")
+        config = json.loads(encode_override)
+        if not enable_blocking and "qaic_config" in config:
+            config["qaic_config"].pop("enable_blocking", None)
+            config["qaic_config"].pop("blocking_mode", None)
+            config["qaic_config"].pop("num_kv_blocks", None)
+        if not enable_ccl and "qaic_config" in config:
+            config["qaic_config"].pop("enable_ccl", None)
         cmd.extend(
             [
                 "--encode-override-qaic-config",
-                compact_json(json.loads(encode_override)),
+                compact_json(config),
             ]
         )
 
     prefill_override = value(row, "prefill_override_qaic_config")
     if prefill_override:
         parse_json_cell(prefill_override, "prefill_override_qaic_config")
+        config = json.loads(prefill_override)
+        if not enable_blocking and "qaic_config" in config:
+            config["qaic_config"].pop("enable_blocking", None)
+            config["qaic_config"].pop("blocking_mode", None)
+            config["qaic_config"].pop("num_kv_blocks", None)
+        if not enable_ccl and "qaic_config" in config:
+            config["qaic_config"].pop("enable_ccl", None)
         cmd.extend(
             [
                 "--prefill-override-qaic-config",
-                compact_json(json.loads(prefill_override)),
+                compact_json(config),
             ]
         )
 
     decode_override = value(row, "decode_override_qaic_config")
     if decode_override:
         parse_json_cell(decode_override, "decode_override_qaic_config")
+        config = json.loads(decode_override)
+        if not enable_blocking and "qaic_config" in config:
+            config["qaic_config"].pop("enable_blocking", None)
+            config["qaic_config"].pop("blocking_mode", None)
+            config["qaic_config"].pop("num_kv_blocks", None)
+        if not enable_ccl and "qaic_config" in config:
+            config["qaic_config"].pop("enable_ccl", None)
         cmd.extend(
             [
                 "--decode-override-qaic-config",
-                compact_json(json.loads(decode_override)),
+                compact_json(config),
             ]
         )
 
@@ -490,10 +514,15 @@ def build_disagg_server_command(row: dict, args) -> list[str]:
 
 def resolve_client_type(row: dict, args) -> str:
     requested = value(row, "client_type", default="auto").lower()
-    if requested != "auto":
-        return requested
-    has_qserve_script = resolve_qserve_script(row, args, require_exists=False)
-    return "qserve" if has_qserve_script else "vllm_bench"
+    if requested == "auto":
+        has_qserve_script = resolve_qserve_script(row, args, require_exists=False)
+        return "qserve" if has_qserve_script else "vllm_bench"
+    # If qserve is explicitly requested but not available, fallback to vllm_bench
+    if requested == "qserve":
+        has_qserve_script = resolve_qserve_script(row, args, require_exists=False)
+        if not has_qserve_script:
+            return "vllm_bench"
+    return requested
 
 
 def resolve_qserve_script(row: dict, args, require_exists: bool = True) -> str:
