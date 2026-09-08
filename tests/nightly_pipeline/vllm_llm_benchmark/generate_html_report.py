@@ -55,13 +55,13 @@ def generate_html_report(csv_path: Path, output_path: Path) -> int:
             box-sizing: border-box;
         }}
         body {{
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            font-family: Arial, sans-serif;
             background-color: #f5f5f5;
             padding: 20px;
             color: #333;
         }}
         .container {{
-            max-width: 1200px;
+            max-width: 100%;
             margin: 0 auto;
             background-color: white;
             border-radius: 8px;
@@ -97,16 +97,19 @@ def generate_html_report(csv_path: Path, output_path: Path) -> int:
             border-bottom: 2px solid #667eea;
         }}
         .env-grid {{
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 20px;
+            width: 100%;
             margin-bottom: 20px;
+        }}
+        .env-row {{
+            display: block;
+            margin-bottom: 15px;
         }}
         .env-card {{
             background-color: #f9f9f9;
             border-left: 4px solid #667eea;
             padding: 15px;
             border-radius: 4px;
+            margin-bottom: 10px;
         }}
         .env-card-label {{
             font-size: 12px;
@@ -135,15 +138,17 @@ def generate_html_report(csv_path: Path, output_path: Path) -> int:
             text-align: left;
             font-weight: 600;
             color: #333;
-            border-bottom: 2px solid #ddd;
-            font-size: 13px;
+            border: 1px solid #ddd;
+            font-size: 12px;
+            white-space: nowrap;
         }}
         td {{
             padding: 12px;
-            border-bottom: 1px solid #eee;
-            font-size: 13px;
+            border: 1px solid #eee;
+            font-size: 12px;
+            word-wrap: break-word;
         }}
-        tr:hover {{
+        tr:nth-child(even) {{
             background-color: #f9f9f9;
         }}
         .status-success {{
@@ -156,11 +161,13 @@ def generate_html_report(csv_path: Path, output_path: Path) -> int:
         }}
         .model-name {{
             font-family: 'Courier New', monospace;
-            font-size: 12px;
+            font-size: 11px;
+            word-break: break-word;
         }}
         .metric {{
             text-align: right;
             font-family: 'Courier New', monospace;
+            font-size: 11px;
         }}
         .footer {{
             background-color: #f5f5f5;
@@ -170,18 +177,17 @@ def generate_html_report(csv_path: Path, output_path: Path) -> int:
             color: #666;
             border-top: 1px solid #eee;
         }}
-        .summary {{
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 15px;
+        .summary-table {{
+            width: 100%;
             margin-bottom: 20px;
         }}
-        .summary-card {{
+        .summary-cell {{
+            width: 33.33%;
+            padding: 15px;
             background-color: #f0f7ff;
             border: 1px solid #b3d9ff;
-            padding: 15px;
-            border-radius: 4px;
             text-align: center;
+            vertical-align: top;
         }}
         .summary-card-value {{
             font-size: 24px;
@@ -233,20 +239,22 @@ def generate_html_report(csv_path: Path, output_path: Path) -> int:
             <!-- Test Results Summary -->
             <div class="section">
                 <div class="section-title">Test Results Summary</div>
-                <div class="summary">
-                    <div class="summary-card">
-                        <div class="summary-card-value">{len(rows)}</div>
-                        <div class="summary-card-label">Total Tests</div>
-                    </div>
-                    <div class="summary-card">
-                        <div class="summary-card-value">{sum(1 for r in rows if r.get('status', '').lower() == 'success')}</div>
-                        <div class="summary-card-label">Passed</div>
-                    </div>
-                    <div class="summary-card">
-                        <div class="summary-card-value">{sum(1 for r in rows if r.get('status', '').lower() != 'success')}</div>
-                        <div class="summary-card-label">Failed</div>
-                    </div>
-                </div>
+                <table class="summary-table">
+                    <tr>
+                        <td class="summary-cell">
+                            <div class="summary-card-value">{len(rows)}</div>
+                            <div class="summary-card-label">Total Tests</div>
+                        </td>
+                        <td class="summary-cell">
+                            <div class="summary-card-value">{sum(1 for r in rows if r.get('status', '').lower() == 'success')}</div>
+                            <div class="summary-card-label">Passed</div>
+                        </td>
+                        <td class="summary-cell">
+                            <div class="summary-card-value">{sum(1 for r in rows if r.get('status', '').lower() != 'success')}</div>
+                            <div class="summary-card-label">Failed</div>
+                        </td>
+                    </tr>
+                </table>
             </div>
 
             <!-- Test Results Table -->
@@ -255,16 +263,16 @@ def generate_html_report(csv_path: Path, output_path: Path) -> int:
                 <table>
                     <thead>
                         <tr>
-                            <th>Model Name</th>
+                            <th>Model</th>
                             <th>Category</th>
                             <th>Config</th>
-                            <th>Config Summary</th>
+                            <th>Summary</th>
                             <th>Status</th>
-                            <th>Mean TTFT (s)</th>
-                            <th>Mean TPOT (s)</th>
-                            <th>Mean ITL (s)</th>
+                            <th>TTFT (s)</th>
+                            <th>TPOT (s)</th>
+                            <th>ITL (s)</th>
                             <th>Decode TPS</th>
-                            <th>Request Throughput (req/s)</th>
+                            <th>Throughput (req/s)</th>
                         </tr>
                     </thead>
                     <tbody>
