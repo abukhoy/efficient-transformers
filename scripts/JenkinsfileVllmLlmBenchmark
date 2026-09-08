@@ -688,28 +688,14 @@ SCRIPT
                     def reportPath = "${env.VLLM_LLM_RESULTS_DIR}/benchmark_report.html"
                     def csvPath = "${env.VLLM_LLM_RESULTS_DIR}/consolidated_published_results.csv"
 
+                    // Read the HTML report content
+                    def htmlContent = readFile(file: reportPath).replaceAll('\\$', '\\\\$')
+
                     emailext(
                         subject: "vLLM QAIC Benchmark Report - Build #${env.BUILD_NUMBER}",
-                        body: '''
-                            <html>
-                                <body>
-                                    <p>vLLM QAIC Benchmark Report for Build #${BUILD_NUMBER}</p>
-                                    <p>Status: <b>SUCCESS</b></p>
-                                    <p>
-                                        <a href="${BUILD_URL}">View Build Details</a>
-                                    </p>
-                                    <p>
-                                        Attached files:
-                                        <ul>
-                                            <li>benchmark_report.html - Detailed HTML report</li>
-                                            <li>consolidated_published_results.csv - Consolidated results CSV</li>
-                                        </ul>
-                                    </p>
-                                </body>
-                            </html>
-                        ''',
+                        body: htmlContent,
                         to: params.EMAIL_RECIPIENTS,
-                        attachmentsPattern: "vllm_llm_results/${env.BUILD_NUMBER}/*.html,vllm_llm_results/${env.BUILD_NUMBER}/*.csv",
+                        attachmentsPattern: "vllm_llm_results/${env.BUILD_NUMBER}/consolidated_published_results.csv",
                         mimeType: 'text/html'
                     )
                     echo "Report email sent to: ${params.EMAIL_RECIPIENTS}"

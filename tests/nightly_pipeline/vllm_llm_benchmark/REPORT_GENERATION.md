@@ -123,10 +123,9 @@ Columns:
 
 The email includes:
 - Subject: `vLLM QAIC Benchmark Report - Build #<BUILD_NUMBER>`
-- Body: HTML formatted with build status and link to build details
+- Body: Full HTML report rendered directly in the email (not as attachment)
 - Attachments: 
-  - `benchmark_report.html` - Professional HTML report
-  - `consolidated_published_results.csv` - Consolidated results data
+  - `consolidated_published_results.csv` - Consolidated results data for reference
 
 ## Troubleshooting
 
