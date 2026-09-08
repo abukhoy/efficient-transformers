@@ -621,7 +621,9 @@ SCRIPT
                 script {
                     sh '''#!/bin/bash
                         set -euo pipefail
-                        sudo docker exec -i ${BUILD_TAG} bash -s <<'SCRIPT'
+                        sudo docker exec -i \
+                            -e BUILD_URL="${BUILD_URL}" \
+                            ${BUILD_TAG} bash -s <<'SCRIPT'
 set -euo pipefail
 cd /efficient-transformers
 . "${VENV_DIR}/bin/activate"
