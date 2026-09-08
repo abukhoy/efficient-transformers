@@ -231,7 +231,7 @@ pipeline {
         booleanParam(name: 'FAIL_FAST', defaultValue: false, description: 'Stop within a config after the first failing row')
         booleanParam(name: 'LATEST_MODELS_ONLY', defaultValue: true, description: 'Restrict runs to the curated LATEST_MODELS list (models >70B are always skipped regardless of this flag)')
         booleanParam(name: 'CLEAN_WORKSPACE_AFTER_RUN', defaultValue: false, description: 'Delete the Jenkins workspace after the build finishes (does not affect the persistent HF/results caches under ${HOME}/.cache)')
-        string(name: 'EMAIL_RECIPIENTS', defaultValue: '', description: 'Email recipients for benchmark report (comma-separated). Empty = no email sent.')
+        string(name: 'EMAIL_RECIPIENTS', defaultValue: 'abukhoye@qti.qualcomm.com', description: 'Email recipients for benchmark report (comma-separated). Empty = no email sent.')
     }
 
     environment {
