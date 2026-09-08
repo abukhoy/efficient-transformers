@@ -17,7 +17,7 @@ from datetime import datetime
 from pathlib import Path
 
 
-def generate_html_report(csv_path: Path, output_path: Path) -> int:
+def generate_html_report(csv_path: Path, output_path: Path, build_url: str = "N/A") -> int:
     """Generate an HTML report from the consolidated published CSV."""
     if not csv_path.exists():
         print(f"Error: CSV file does not exist: {csv_path}")
@@ -39,6 +39,7 @@ def generate_html_report(csv_path: Path, output_path: Path) -> int:
         "qserve_branch": rows[0].get("qserve_branch", "N/A"),
         "qeff_branch": rows[0].get("qeff_branch", "N/A"),
         "qaic_sdk_version": rows[0].get("qaic_sdk_version", "N/A"),
+        "build_url": build_url,
     }
 
     # Generate HTML
@@ -110,16 +111,27 @@ def generate_html_report(csv_path: Path, output_path: Path) -> int:
             padding: 15px;
             border-radius: 4px;
             margin-bottom: 10px;
+            display: inline-block;
+            width: 48%;
+            margin-right: 2%;
+            vertical-align: top;
+        }}
+        .env-card:nth-child(odd) {{
+            margin-right: 2%;
+        }}
+        .env-card:nth-child(even) {{
+            margin-right: 0;
         }}
         .env-card-label {{
-            font-size: 12px;
+            font-size: 11px;
             color: #666;
             text-transform: uppercase;
             letter-spacing: 0.5px;
             margin-bottom: 5px;
+            font-weight: 600;
         }}
         .env-card-value {{
-            font-size: 14px;
+            font-size: 13px;
             font-weight: 500;
             color: #333;
             word-break: break-all;
@@ -212,28 +224,40 @@ def generate_html_report(csv_path: Path, output_path: Path) -> int:
             <!-- Environment Info Section -->
             <div class="section">
                 <div class="section-title">Environment Information</div>
-                <div class="env-grid">
-                    <div class="env-card">
-                        <div class="env-card-label">vLLM QAIC Branch</div>
-                        <div class="env-card-value">{env_info['vllm_qaic_branch']}</div>
-                    </div>
-                    <div class="env-card">
-                        <div class="env-card-label">QAIC Disagg Branch</div>
-                        <div class="env-card-value">{env_info['qaic_disagg_branch']}</div>
-                    </div>
-                    <div class="env-card">
-                        <div class="env-card-label">QServe Branch</div>
-                        <div class="env-card-value">{env_info['qserve_branch']}</div>
-                    </div>
-                    <div class="env-card">
-                        <div class="env-card-label">QEff Branch</div>
-                        <div class="env-card-value">{env_info['qeff_branch']}</div>
-                    </div>
-                    <div class="env-card">
-                        <div class="env-card-label">QAIC SDK Version</div>
-                        <div class="env-card-value">{env_info['qaic_sdk_version']}</div>
-                    </div>
-                </div>
+                <table style="width: 100%; border-collapse: collapse;">
+                    <tr>
+                        <td style="width: 50%; padding: 10px; background-color: #f9f9f9; border-left: 4px solid #667eea; border-bottom: 1px solid #eee;">
+                            <div style="font-size: 11px; color: #666; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px; font-weight: 600;">vLLM QAIC Branch</div>
+                            <div style="font-size: 13px; font-weight: 500; color: #333; font-family: 'Courier New', monospace; word-break: break-all;">{env_info['vllm_qaic_branch']}</div>
+                        </td>
+                        <td style="width: 50%; padding: 10px; background-color: #f9f9f9; border-left: 4px solid #667eea; border-bottom: 1px solid #eee;">
+                            <div style="font-size: 11px; color: #666; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px; font-weight: 600;">QAIC Disagg Branch</div>
+                            <div style="font-size: 13px; font-weight: 500; color: #333; font-family: 'Courier New', monospace; word-break: break-all;">{env_info['qaic_disagg_branch']}</div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="width: 50%; padding: 10px; background-color: #f9f9f9; border-left: 4px solid #667eea; border-bottom: 1px solid #eee;">
+                            <div style="font-size: 11px; color: #666; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px; font-weight: 600;">QServe Branch</div>
+                            <div style="font-size: 13px; font-weight: 500; color: #333; font-family: 'Courier New', monospace; word-break: break-all;">{env_info['qserve_branch']}</div>
+                        </td>
+                        <td style="width: 50%; padding: 10px; background-color: #f9f9f9; border-left: 4px solid #667eea; border-bottom: 1px solid #eee;">
+                            <div style="font-size: 11px; color: #666; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px; font-weight: 600;">QEff Branch</div>
+                            <div style="font-size: 13px; font-weight: 500; color: #333; font-family: 'Courier New', monospace; word-break: break-all;">{env_info['qeff_branch']}</div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="width: 50%; padding: 10px; background-color: #f9f9f9; border-left: 4px solid #667eea; border-bottom: 1px solid #eee;">
+                            <div style="font-size: 11px; color: #666; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px; font-weight: 600;">QAIC SDK Version</div>
+                            <div style="font-size: 13px; font-weight: 500; color: #333; font-family: 'Courier New', monospace; word-break: break-all;">{env_info['qaic_sdk_version']}</div>
+                        </td>
+                        <td style="width: 50%; padding: 10px; background-color: #f9f9f9; border-left: 4px solid #667eea; border-bottom: 1px solid #eee;">
+                            <div style="font-size: 11px; color: #666; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px; font-weight: 600;">Build URL</div>
+                            <div style="font-size: 13px; font-weight: 500; color: #0066cc; font-family: 'Courier New', monospace; word-break: break-all;">
+                                <a href="{env_info['build_url']}" style="color: #0066cc; text-decoration: none;">{env_info['build_url']}</a>
+                            </div>
+                        </td>
+                    </tr>
+                </table>
             </div>
 
             <!-- Test Results Summary -->
@@ -263,16 +287,16 @@ def generate_html_report(csv_path: Path, output_path: Path) -> int:
                 <table>
                     <thead>
                         <tr>
-                            <th>Model</th>
-                            <th>Category</th>
-                            <th>Config</th>
-                            <th>Summary</th>
-                            <th>Status</th>
-                            <th>TTFT (s)</th>
-                            <th>TPOT (s)</th>
-                            <th>ITL (s)</th>
-                            <th>Decode TPS</th>
-                            <th>Throughput (req/s)</th>
+                            <th style="text-align: left;">Model</th>
+                            <th style="text-align: left;">Category</th>
+                            <th style="text-align: left;">Config</th>
+                            <th style="text-align: left;">Summary</th>
+                            <th style="text-align: left;">Status</th>
+                            <th style="text-align: right;">TTFT (s)</th>
+                            <th style="text-align: right;">TPOT (s)</th>
+                            <th style="text-align: right;">ITL (s)</th>
+                            <th style="text-align: right;">Decode TPS</th>
+                            <th style="text-align: right;">Throughput (req/s)</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -284,11 +308,11 @@ def generate_html_report(csv_path: Path, output_path: Path) -> int:
         status_text = "✓ PASS" if status == "success" else "✗ FAIL"
 
         html_content += f"""                        <tr>
-                            <td class="model-name">{row.get('model', 'N/A')}</td>
-                            <td>{row.get('model_category', 'N/A')}</td>
-                            <td>{row.get('config_name', 'N/A')}</td>
-                            <td>{row.get('config_summary', 'N/A')}</td>
-                            <td class="{status_class}">{status_text}</td>
+                            <td class="model-name" style="text-align: left;">{row.get('model', 'N/A')}</td>
+                            <td style="text-align: left;">{row.get('model_category', 'N/A')}</td>
+                            <td style="text-align: left;">{row.get('config_name', 'N/A')}</td>
+                            <td style="text-align: left;">{row.get('config_summary', 'N/A')}</td>
+                            <td class="{status_class}" style="text-align: left;">{status_text}</td>
                             <td class="metric">{row.get('mean_ttft_s', 'N/A')}</td>
                             <td class="metric">{row.get('mean_tpot_s', 'N/A')}</td>
                             <td class="metric">{row.get('mean_itl_s', 'N/A')}</td>
@@ -333,9 +357,14 @@ def main() -> int:
         required=True,
         help="Output HTML report path",
     )
+    parser.add_argument(
+        "--build-url",
+        default="N/A",
+        help="Jenkins build URL (optional)",
+    )
     args = parser.parse_args()
 
-    return generate_html_report(Path(args.csv), Path(args.output))
+    return generate_html_report(Path(args.csv), Path(args.output), args.build_url)
 
 
 if __name__ == "__main__":

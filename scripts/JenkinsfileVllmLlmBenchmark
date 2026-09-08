@@ -632,10 +632,11 @@ python tests/nightly_pipeline/vllm_llm_benchmark/merge_published_results.py \
     --results-dir "${VLLM_LLM_RESULTS_DIR}" \
     --output "${VLLM_LLM_RESULTS_DIR}/consolidated_published_results.csv"
 
-# Generate HTML report
+# Generate HTML report with build URL
 python tests/nightly_pipeline/vllm_llm_benchmark/generate_html_report.py \
     --csv "${VLLM_LLM_RESULTS_DIR}/consolidated_published_results.csv" \
-    --output "${VLLM_LLM_RESULTS_DIR}/benchmark_report.html"
+    --output "${VLLM_LLM_RESULTS_DIR}/benchmark_report.html" \
+    --build-url "${BUILD_URL}"
 
 echo "Report generation completed successfully"
 SCRIPT
@@ -695,7 +696,7 @@ SCRIPT
                         subject: "vLLM QAIC Benchmark Report - Build #${env.BUILD_NUMBER}",
                         body: htmlContent,
                         to: params.EMAIL_RECIPIENTS,
-                        attachmentsPattern: "vllm_llm_results/${env.BUILD_NUMBER}/consolidated_published_results.csv",
+                        attachmentsPattern: "**/consolidated_published_results.csv",
                         mimeType: 'text/html'
                     )
                     echo "Report email sent to: ${params.EMAIL_RECIPIENTS}"
