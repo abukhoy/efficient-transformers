@@ -231,6 +231,7 @@ pipeline {
         booleanParam(name: 'FAIL_FAST', defaultValue: false, description: 'Stop within a config after the first failing row')
         booleanParam(name: 'LATEST_MODELS_ONLY', defaultValue: true, description: 'Restrict runs to the curated LATEST_MODELS list (models >70B are always skipped regardless of this flag)')
         booleanParam(name: 'CLEAN_WORKSPACE_AFTER_RUN', defaultValue: false, description: 'Delete the Jenkins workspace after the build finishes (does not affect the persistent HF/results caches under ${HOME}/.cache)')
+        string(name: 'EMAIL_RECIPIENTS', defaultValue: '', description: 'Email recipients for benchmark report (comma-separated). Empty = no email sent.')
     }
 
     environment {
@@ -614,6 +615,34 @@ SCRIPT
                 }
             }
         }
+
+        stage('Generate Report') {
+            steps {
+                script {
+                    sh '''#!/bin/bash
+                        set -euo pipefail
+                        sudo docker exec -i ${BUILD_TAG} bash -s <<'SCRIPT'
+set -euo pipefail
+cd /efficient-transformers
+. "${VENV_DIR}/bin/activate"
+export PYTHONUNBUFFERED=1
+
+# Generate consolidated published CSV
+python tests/nightly_pipeline/vllm_llm_benchmark/merge_published_results.py \
+    --results-dir "${VLLM_LLM_RESULTS_DIR}" \
+    --output "${VLLM_LLM_RESULTS_DIR}/consolidated_published_results.csv"
+
+# Generate HTML report
+python tests/nightly_pipeline/vllm_llm_benchmark/generate_html_report.py \
+    --csv "${VLLM_LLM_RESULTS_DIR}/consolidated_published_results.csv" \
+    --output "${VLLM_LLM_RESULTS_DIR}/benchmark_report.html"
+
+echo "Report generation completed successfully"
+SCRIPT
+                    '''
+                }
+            }
+        }
     }
 
     post {
@@ -643,13 +672,71 @@ SCRIPT
                 }
             }
             archiveArtifacts(
-                artifacts: "vllm_llm_results/${env.BUILD_NUMBER}/*.csv",
+                artifacts: "vllm_llm_results/${env.BUILD_NUMBER}/*.csv,vllm_llm_results/${env.BUILD_NUMBER}/*.html",
                 allowEmptyArchive: true
             )
             script {
                 if (params.CLEAN_WORKSPACE_AFTER_RUN) {
                     echo 'CLEAN_WORKSPACE_AFTER_RUN=true; deleting workspace.'
                     deleteDir()
+                }
+            }
+        }
+        success {
+            script {
+                if (params.EMAIL_RECIPIENTS?.trim()) {
+                    def reportPath = "${env.VLLM_LLM_RESULTS_DIR}/benchmark_report.html"
+                    def csvPath = "${env.VLLM_LLM_RESULTS_DIR}/consolidated_published_results.csv"
+
+                    emailext(
+                        subject: "vLLM QAIC Benchmark Report - Build #${env.BUILD_NUMBER}",
+                        body: '''
+                            <html>
+                                <body>
+                                    <p>vLLM QAIC Benchmark Report for Build #${BUILD_NUMBER}</p>
+                                    <p>Status: <b>SUCCESS</b></p>
+                                    <p>
+                                        <a href="${BUILD_URL}">View Build Details</a>
+                                    </p>
+                                    <p>
+                                        Attached files:
+                                        <ul>
+                                            <li>benchmark_report.html - Detailed HTML report</li>
+                                            <li>consolidated_published_results.csv - Consolidated results CSV</li>
+                                        </ul>
+                                    </p>
+                                </body>
+                            </html>
+                        ''',
+                        to: params.EMAIL_RECIPIENTS,
+                        attachmentsPattern: "vllm_llm_results/${env.BUILD_NUMBER}/*.html,vllm_llm_results/${env.BUILD_NUMBER}/*.csv",
+                        mimeType: 'text/html'
+                    )
+                    echo "Report email sent to: ${params.EMAIL_RECIPIENTS}"
+                }
+            }
+        }
+        failure {
+            script {
+                if (params.EMAIL_RECIPIENTS?.trim()) {
+                    emailext(
+                        subject: "vLLM QAIC Benchmark Report - Build #${env.BUILD_NUMBER} FAILED",
+                        body: '''
+                            <html>
+                                <body>
+                                    <p>vLLM QAIC Benchmark Report for Build #${BUILD_NUMBER}</p>
+                                    <p>Status: <b>FAILED</b></p>
+                                    <p>
+                                        <a href="${BUILD_URL}">View Build Details</a>
+                                    </p>
+                                    <p>Please check the build logs for more information.</p>
+                                </body>
+                            </html>
+                        ''',
+                        to: params.EMAIL_RECIPIENTS,
+                        mimeType: 'text/html'
+                    )
+                    echo "Failure notification email sent to: ${params.EMAIL_RECIPIENTS}"
                 }
             }
         }

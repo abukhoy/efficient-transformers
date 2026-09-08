@@ -92,7 +92,6 @@ OUTPUT_FIELDS = [
     "status",
     "error",
     "model",
-    "tag",
     "server_type",
     "config_summary",
     "mode_type",
@@ -121,8 +120,35 @@ OUTPUT_FIELDS = [
     "mean_ITL_ms",
     "P99_ITL_ms",
     "decode_TPS",
+    "vllm_qaic_branch",
+    "qaic_disagg_branch",
+    "qserve_branch",
+    "qeff_branch",
+    "qaic_sdk_version",
+    "server_command",
+    "client_command",
     "server_log",
     "client_log",
+]
+
+PUBLISHED_FIELDS = [
+    "model",
+    "model_category",
+    "config_name",
+    "config_summary",
+    "status",
+    "mean_ttft_s",
+    "mean_tpot_s",
+    "mean_itl_s",
+    "decode_TPS",
+    "request_throughput_req_s",
+    "vllm_qaic_branch",
+    "qaic_disagg_branch",
+    "qserve_branch",
+    "qeff_branch",
+    "qaic_sdk_version",
+    "server_command",
+    "client_command",
 ]
 
 
@@ -966,6 +992,21 @@ def result_status(client_returncode: int | None, parsed_runs: list[dict]) -> str
     return "success" if parsed_runs else "no_results"
 
 
+def get_qaic_sdk_version() -> str:
+    try:
+        result = subprocess.run(
+            ["/opt/qti-aic/tools/qaic-version-util"],
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+        if result.returncode == 0:
+            return result.stdout.strip()
+    except (FileNotFoundError, subprocess.TimeoutExpired, OSError):
+        pass
+    return ""
+
+
 def make_output_row(
     row: dict,
     config_name: str,
@@ -974,6 +1015,8 @@ def make_output_row(
     run: dict,
     server_log: Path,
     client_log: Path,
+    server_cmd: list[str] | None = None,
+    client_cmd: list[str] | None = None,
 ) -> dict:
     model = value(row, "model")
     max_concurrency = value(row, "max_concurrency", "max-concurrency")
@@ -991,7 +1034,6 @@ def make_output_row(
         "status": status,
         "error": error,
         "model": model,
-        "tag": value(row, "tag"),
         "server_type": value(row, "server_type", default="api_server"),
         "config_summary": build_config_summary(row),
         "mode_type": build_mode_type(row),
@@ -1020,6 +1062,13 @@ def make_output_row(
         "mean_ITL_ms": rounded(run.get("mean_itl_ms", "")),
         "P99_ITL_ms": rounded(run.get("p99_itl_ms", "")),
         "decode_TPS": decode_tps,
+        "vllm_qaic_branch": os.environ.get("VLLM_QAIC_BRANCH", ""),
+        "qaic_disagg_branch": os.environ.get("QAIC_DISAGG_BRANCH", ""),
+        "qserve_branch": os.environ.get("QSERVE_BRANCH", ""),
+        "qeff_branch": os.environ.get("QEFF_BRANCH", ""),
+        "qaic_sdk_version": get_qaic_sdk_version(),
+        "server_command": command_to_shell_string(server_cmd) if server_cmd else "",
+        "client_command": command_to_shell_string(client_cmd) if client_cmd else "",
         "server_log": str(server_log),
         "client_log": str(client_log),
     }
@@ -1035,6 +1084,70 @@ def append_output_rows(output_csv: Path, rows: list[dict]) -> None:
         if not exists:
             writer.writeheader()
         writer.writerows(rows)
+
+
+def generate_published_csv(input_csv: Path, output_csv: Path) -> None:
+    """Generate a simplified published CSV with only key fields for team distribution."""
+    if not input_csv.exists():
+        return
+    with input_csv.open(newline="", encoding="utf-8-sig") as f:
+        reader = csv.DictReader(f)
+        rows = list(reader)
+    if not rows:
+        return
+
+    # Convert milliseconds to seconds for latency metrics and add model_category
+    for row in rows:
+        if row.get("mean_TTFT_ms"):
+            row["mean_ttft_s"] = str(round(float(row["mean_TTFT_ms"]) / 1000, 4))
+        if row.get("mean_TPOT_ms"):
+            row["mean_tpot_s"] = str(round(float(row["mean_TPOT_ms"]) / 1000, 4))
+        if row.get("mean_ITL_ms"):
+            row["mean_itl_s"] = str(round(float(row["mean_ITL_ms"]) / 1000, 4))
+
+        # Determine model category based on config_name
+        config_name = row.get("config_name", "").lower()
+        if "embedding" in config_name:
+            row["model_category"] = "Embedding"
+        elif "audio" in config_name:
+            row["model_category"] = "Audio"
+        elif "vlm" in config_name:
+            row["model_category"] = "VLM"
+        else:
+            row["model_category"] = "LLM"
+
+    output_csv.parent.mkdir(parents=True, exist_ok=True)
+    with output_csv.open("w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=PUBLISHED_FIELDS, extrasaction="ignore")
+        writer.writeheader()
+        writer.writerows(rows)
+
+
+def merge_published_csvs(results_dir: Path, output_csv: Path) -> None:
+    """Merge all published CSVs in results_dir into a single consolidated published CSV."""
+    results_dir = Path(results_dir)
+    if not results_dir.exists():
+        return
+
+    all_rows = []
+    published_csvs = sorted(results_dir.glob("*_results_published.csv"))
+
+    for pub_csv in published_csvs:
+        if not pub_csv.exists():
+            continue
+        with pub_csv.open(newline="", encoding="utf-8-sig") as f:
+            reader = csv.DictReader(f)
+            rows = list(reader)
+            all_rows.extend(rows)
+
+    if not all_rows:
+        return
+
+    output_csv.parent.mkdir(parents=True, exist_ok=True)
+    with output_csv.open("w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=PUBLISHED_FIELDS, extrasaction="ignore")
+        writer.writeheader()
+        writer.writerows(all_rows)
 
 
 def read_csv_rows(csv_path: Path) -> list[dict]:
@@ -1102,6 +1215,8 @@ def run_one(row: dict, args, config_name: str, output_csv: Path) -> bool:
                     run={},
                     server_log=server_log,
                     client_log=client_log,
+                    server_cmd=server_cmd,
+                    client_cmd=client_cmd,
                 )
             ],
         )
@@ -1144,6 +1259,8 @@ def run_one(row: dict, args, config_name: str, output_csv: Path) -> bool:
                     run=run,
                     server_log=server_log,
                     client_log=client_log,
+                    server_cmd=server_cmd,
+                    client_cmd=client_cmd,
                 )
                 for run in output_runs
             ],
@@ -1290,6 +1407,8 @@ def run_benchmarks(args, latest_models: set[str]) -> int:
 
     print()
     print(f"Output CSV: {output_csv}")
+    print("Note: Use merge_published_results.py to generate consolidated published CSV")
+
     if failures:
         print(f"Completed with {failures} failed row(s).")
         return 1

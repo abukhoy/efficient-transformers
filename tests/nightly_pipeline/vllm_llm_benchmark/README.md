@@ -72,6 +72,38 @@ python3 tests/nightly_pipeline/vllm_llm_benchmark/vllm_vlm_benchmark.py \
   --dry-run
 ```
 
+## Consolidated Published CSV
+
+After all benchmark categories complete, run `merge_published_results.py` to generate
+a single consolidated published CSV with only the key fields for team distribution:
+
+```bash
+python3 tests/nightly_pipeline/vllm_llm_benchmark/merge_published_results.py \
+  --results-dir vllm_llm_results/ \
+  --output vllm_llm_results/consolidated_published_results.csv
+```
+
+This merges all `*_results.csv` files (from LLM, embedding, audio, VLM categories)
+into one file with 17 key columns: model, model_category, config_name, config_summary,
+status, mean_ttft_s, mean_tpot_s, mean_itl_s, decode_TPS, request_throughput_req_s,
+vllm_qaic_branch, qaic_disagg_branch, qserve_branch, qeff_branch, qaic_sdk_version,
+server_command, client_command. Model categories are auto-detected based on config_name.
+
+## HTML Report Generation
+
+After generating the consolidated CSV, create an HTML report for email distribution:
+
+```bash
+python3 tests/nightly_pipeline/vllm_llm_benchmark/generate_html_report.py \
+  --csv vllm_llm_results/consolidated_published_results.csv \
+  --output vllm_llm_results/benchmark_report.html
+```
+
+The HTML report includes:
+- **Environment Information**: Branch details (vLLM QAIC, QAIC Disagg, QServe, QEff) and QAIC SDK version
+- **Test Results Summary**: Total tests, passed, and failed counts
+- **Detailed Test Results**: Table with model name, category, config, status, and performance metrics
+
 ## Jenkins Flow
 
 The Jenkins pipeline:
@@ -81,7 +113,8 @@ The Jenkins pipeline:
 3. Runs `scripts/install.sh aot`, which installs QEfficient internally.
 4. Clones and installs `qaic-disagg`.
 5. Runs the selected LLM/embedding/audio/VLM config CSVs.
-6. Archives `vllm_llm_results/**/*.csv` and `vllm_llm_results/**/*.log`.
+6. Runs `merge_published_results.py` to generate consolidated published CSV.
+7. Archives `vllm_llm_results/**/*.csv` and `vllm_llm_results/**/*.log`.
 
 Use `DRY_RUN=true` and `ROWS_DEFAULT=1` to verify the gpt2 command and output
 CSV/log generation on a Jenkins agent without consuming QAIC runtime. The
@@ -111,7 +144,7 @@ unaffected.
 
 Common columns:
 
-- `model`, `tag`, `server_type`, `client_type`, `host`, `port`
+- `model`, `server_type`, `client_type`, `host`, `port`
 - `PL`, `GL`, `CL`, `num_prompts`, `max_concurrency`
 - `backend`, `endpoint`, `dataset_name`, `ignore_eos`
 - `server_extra_args`, `client_extra_args` for mode-specific flags not yet

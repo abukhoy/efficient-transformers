@@ -1,0 +1,334 @@
+#!/usr/bin/env python3
+"""
+Generate an HTML report from the consolidated published CSV for email distribution.
+
+This script reads the consolidated published CSV and generates a formatted HTML report
+with environment info (branch details, SDK version) and test results table.
+
+Usage:
+    python3 generate_html_report.py --csv consolidated_published_results.csv --output report.html
+"""
+
+from __future__ import annotations
+
+import argparse
+import csv
+from datetime import datetime
+from pathlib import Path
+
+
+def generate_html_report(csv_path: Path, output_path: Path) -> int:
+    """Generate an HTML report from the consolidated published CSV."""
+    if not csv_path.exists():
+        print(f"Error: CSV file does not exist: {csv_path}")
+        return 1
+
+    rows = []
+    with csv_path.open(newline="", encoding="utf-8-sig") as f:
+        reader = csv.DictReader(f)
+        rows = list(reader)
+
+    if not rows:
+        print("Error: no data found in CSV file")
+        return 1
+
+    # Extract environment info from first row
+    env_info = {
+        "vllm_qaic_branch": rows[0].get("vllm_qaic_branch", "N/A"),
+        "qaic_disagg_branch": rows[0].get("qaic_disagg_branch", "N/A"),
+        "qserve_branch": rows[0].get("qserve_branch", "N/A"),
+        "qeff_branch": rows[0].get("qeff_branch", "N/A"),
+        "qaic_sdk_version": rows[0].get("qaic_sdk_version", "N/A"),
+    }
+
+    # Generate HTML
+    html_content = f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>vLLM QAIC Benchmark Report</title>
+    <style>
+        * {{
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }}
+        body {{
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: #f5f5f5;
+            padding: 20px;
+            color: #333;
+        }}
+        .container {{
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }}
+        .header {{
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }}
+        .header h1 {{
+            font-size: 28px;
+            margin-bottom: 10px;
+        }}
+        .header p {{
+            font-size: 14px;
+            opacity: 0.9;
+        }}
+        .content {{
+            padding: 30px;
+        }}
+        .section {{
+            margin-bottom: 40px;
+        }}
+        .section-title {{
+            font-size: 20px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #667eea;
+        }}
+        .env-grid {{
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }}
+        .env-card {{
+            background-color: #f9f9f9;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            border-radius: 4px;
+        }}
+        .env-card-label {{
+            font-size: 12px;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 5px;
+        }}
+        .env-card-value {{
+            font-size: 14px;
+            font-weight: 500;
+            color: #333;
+            word-break: break-all;
+            font-family: 'Courier New', monospace;
+        }}
+        table {{
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }}
+        thead {{
+            background-color: #f0f0f0;
+        }}
+        th {{
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            color: #333;
+            border-bottom: 2px solid #ddd;
+            font-size: 13px;
+        }}
+        td {{
+            padding: 12px;
+            border-bottom: 1px solid #eee;
+            font-size: 13px;
+        }}
+        tr:hover {{
+            background-color: #f9f9f9;
+        }}
+        .status-success {{
+            color: #27ae60;
+            font-weight: 600;
+        }}
+        .status-failed {{
+            color: #e74c3c;
+            font-weight: 600;
+        }}
+        .model-name {{
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+        }}
+        .metric {{
+            text-align: right;
+            font-family: 'Courier New', monospace;
+        }}
+        .footer {{
+            background-color: #f5f5f5;
+            padding: 20px 30px;
+            text-align: center;
+            font-size: 12px;
+            color: #666;
+            border-top: 1px solid #eee;
+        }}
+        .summary {{
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }}
+        .summary-card {{
+            background-color: #f0f7ff;
+            border: 1px solid #b3d9ff;
+            padding: 15px;
+            border-radius: 4px;
+            text-align: center;
+        }}
+        .summary-card-value {{
+            font-size: 24px;
+            font-weight: 700;
+            color: #667eea;
+        }}
+        .summary-card-label {{
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>vLLM QAIC Benchmark Report</h1>
+            <p>Generated on {datetime.now().strftime('%Y-%m-%d %H:%M:%S UTC')}</p>
+        </div>
+
+        <div class="content">
+            <!-- Environment Info Section -->
+            <div class="section">
+                <div class="section-title">Environment Information</div>
+                <div class="env-grid">
+                    <div class="env-card">
+                        <div class="env-card-label">vLLM QAIC Branch</div>
+                        <div class="env-card-value">{env_info['vllm_qaic_branch']}</div>
+                    </div>
+                    <div class="env-card">
+                        <div class="env-card-label">QAIC Disagg Branch</div>
+                        <div class="env-card-value">{env_info['qaic_disagg_branch']}</div>
+                    </div>
+                    <div class="env-card">
+                        <div class="env-card-label">QServe Branch</div>
+                        <div class="env-card-value">{env_info['qserve_branch']}</div>
+                    </div>
+                    <div class="env-card">
+                        <div class="env-card-label">QEff Branch</div>
+                        <div class="env-card-value">{env_info['qeff_branch']}</div>
+                    </div>
+                    <div class="env-card">
+                        <div class="env-card-label">QAIC SDK Version</div>
+                        <div class="env-card-value">{env_info['qaic_sdk_version']}</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Test Results Summary -->
+            <div class="section">
+                <div class="section-title">Test Results Summary</div>
+                <div class="summary">
+                    <div class="summary-card">
+                        <div class="summary-card-value">{len(rows)}</div>
+                        <div class="summary-card-label">Total Tests</div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="summary-card-value">{sum(1 for r in rows if r.get('status', '').lower() == 'success')}</div>
+                        <div class="summary-card-label">Passed</div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="summary-card-value">{sum(1 for r in rows if r.get('status', '').lower() != 'success')}</div>
+                        <div class="summary-card-label">Failed</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Test Results Table -->
+            <div class="section">
+                <div class="section-title">Detailed Test Results</div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Model Name</th>
+                            <th>Category</th>
+                            <th>Config</th>
+                            <th>Config Summary</th>
+                            <th>Status</th>
+                            <th>Mean TTFT (s)</th>
+                            <th>Mean TPOT (s)</th>
+                            <th>Mean ITL (s)</th>
+                            <th>Decode TPS</th>
+                            <th>Request Throughput (req/s)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+"""
+
+    for row in rows:
+        status = row.get("status", "N/A").lower()
+        status_class = "status-success" if status == "success" else "status-failed"
+        status_text = "✓ PASS" if status == "success" else "✗ FAIL"
+
+        html_content += f"""                        <tr>
+                            <td class="model-name">{row.get('model', 'N/A')}</td>
+                            <td>{row.get('model_category', 'N/A')}</td>
+                            <td>{row.get('config_name', 'N/A')}</td>
+                            <td>{row.get('config_summary', 'N/A')}</td>
+                            <td class="{status_class}">{status_text}</td>
+                            <td class="metric">{row.get('mean_ttft_s', 'N/A')}</td>
+                            <td class="metric">{row.get('mean_tpot_s', 'N/A')}</td>
+                            <td class="metric">{row.get('mean_itl_s', 'N/A')}</td>
+                            <td class="metric">{row.get('decode_TPS', 'N/A')}</td>
+                            <td class="metric">{row.get('request_throughput_req_s', 'N/A')}</td>
+                        </tr>
+"""
+
+    html_content += """                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>This report was automatically generated from vLLM QAIC benchmark results.</p>
+            <p>For questions or issues, please contact the QEfficient team.</p>
+        </div>
+    </div>
+</body>
+</html>
+"""
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    with output_path.open("w", encoding="utf-8") as f:
+        f.write(html_content)
+
+    print(f"✓ HTML report generated: {output_path}")
+    return 0
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(
+        description="Generate an HTML report from the consolidated published CSV."
+    )
+    parser.add_argument(
+        "--csv",
+        required=True,
+        help="Path to consolidated published CSV file",
+    )
+    parser.add_argument(
+        "--output",
+        required=True,
+        help="Output HTML report path",
+    )
+    args = parser.parse_args()
+
+    return generate_html_report(Path(args.csv), Path(args.output))
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
