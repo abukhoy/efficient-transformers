@@ -56,9 +56,18 @@ def generate_published_csv(input_csv: Path, output_csv: Path) -> None:
         if row.get("mean_ITL_ms"):
             row["mean_itl_s"] = str(round(float(row["mean_ITL_ms"]) / 1000, 4))
 
-        # Determine model category based on config_name
+        # Concatenate config_summary and mode_type
+        config_summary = row.get("config_summary", "").strip()
+        mode_type = row.get("mode_type", "").strip()
+        if mode_type:
+            row["config_summary"] = f"{config_summary} | {mode_type}" if config_summary else mode_type
+
+        # Determine model category based on config_name and pooling_method
         config_name = row.get("config_name", "").lower()
-        if "embedding" in config_name:
+        pooling_method = row.get("pooling_method", "").lower()
+        if pooling_method in ("mean", "avg", "cls", "max"):
+            row["model_category"] = "Embedding"
+        elif "embedding" in config_name:
             row["model_category"] = "Embedding"
         elif "audio" in config_name:
             row["model_category"] = "Audio"
@@ -113,9 +122,18 @@ def merge_results_to_published_csv(results_dir: Path, output_csv: Path) -> int:
         if row.get("mean_ITL_ms"):
             row["mean_itl_s"] = str(round(float(row["mean_ITL_ms"]) / 1000, 4))
 
-        # Determine model category based on config_name
+        # Concatenate config_summary and mode_type
+        config_summary = row.get("config_summary", "").strip()
+        mode_type = row.get("mode_type", "").strip()
+        if mode_type:
+            row["config_summary"] = f"{config_summary} | {mode_type}" if config_summary else mode_type
+
+        # Determine model category based on config_name and pooling_method
         config_name = row.get("config_name", "").lower()
-        if "embedding" in config_name:
+        pooling_method = row.get("pooling_method", "").lower()
+        if pooling_method in ("mean", "avg", "cls", "max"):
+            row["model_category"] = "Embedding"
+        elif "embedding" in config_name:
             row["model_category"] = "Embedding"
         elif "audio" in config_name:
             row["model_category"] = "Audio"

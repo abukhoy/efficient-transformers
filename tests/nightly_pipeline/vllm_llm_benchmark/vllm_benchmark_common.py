@@ -1186,7 +1186,9 @@ def parse_rows_spec(row_spec: str, total_rows: int) -> list[int]:
 def run_one(row: dict, args, config_name: str, output_csv: Path) -> bool:
     row_number = int(row["_data_row"])
     model = value(row, "model")
-    run_id = f"{row_number:03d}_{sanitize_name(model)}_{sanitize_name(config_name)}"
+    # Use pooling_method as config_name if available (for embedding models)
+    effective_config_name = value(row, "pooling_method") or config_name
+    run_id = f"{row_number:03d}_{sanitize_name(model)}_{sanitize_name(effective_config_name)}"
     log_dir = Path(args.results_dir) / "logs" / sanitize_name(config_name) / run_id
     server_log = log_dir / "server.log"
     client_log = log_dir / "client.log"
@@ -1196,7 +1198,7 @@ def run_one(row: dict, args, config_name: str, output_csv: Path) -> bool:
 
     print()
     print("=" * 80)
-    print(f"Config: {config_name}  Row: {row_number}  Model: {model}")
+    print(f"Config: {effective_config_name}  Row: {row_number}  Model: {model}")
     print(f"Server: {command_to_shell_string(server_cmd)}")
     print(f"Client: {command_to_shell_string(client_cmd)}")
     print("=" * 80)
@@ -1209,7 +1211,7 @@ def run_one(row: dict, args, config_name: str, output_csv: Path) -> bool:
             [
                 make_output_row(
                     row=row,
-                    config_name=config_name,
+                    config_name=effective_config_name,
                     status="dry_run",
                     error="",
                     run={},
@@ -1253,7 +1255,7 @@ def run_one(row: dict, args, config_name: str, output_csv: Path) -> bool:
             [
                 make_output_row(
                     row=row,
-                    config_name=config_name,
+                    config_name=effective_config_name,
                     status=status,
                     error=error,
                     run=run,
