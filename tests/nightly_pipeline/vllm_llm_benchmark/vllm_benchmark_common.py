@@ -129,6 +129,7 @@ OUTPUT_FIELDS = [
     "client_command",
     "server_log",
     "client_log",
+    "pooling_method",
 ]
 
 PUBLISHED_FIELDS = [
@@ -1071,6 +1072,7 @@ def make_output_row(
         "client_command": command_to_shell_string(client_cmd) if client_cmd else "",
         "server_log": str(server_log),
         "client_log": str(client_log),
+        "pooling_method": value(row, "pooling_method"),
     }
 
 
